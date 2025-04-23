@@ -75,3 +75,5 @@ sensitive information remains protected.
    ```bash
    deactivate
    ```
+
+**_Developed on Python 3.12_**
