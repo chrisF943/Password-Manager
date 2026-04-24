@@ -1,114 +1,98 @@
 ## Overview
 
-Welcome to lockey, a password manager built with Flet (Flutter), SQLAlchemy and SQLite, that helps you manage and store your passwords locally and securely. Built with Python, it provides an intuitive graphical interface for creating, retrieving, updating, and deleting password entries. All passwords are encrypted using Fernet symmetric encryption to ensure your sensitive information remains protected.
+Welcome to **fern**, a password manager built with Flet (Flutter), SQLAlchemy and SQLite, that helps you manage and store your passwords locally and securely. All passwords are encrypted using Fernet symmetric encryption to ensure your sensitive information remains protected.
 
 ## Key Features
 
 ### Security
 
 - **Key Derivation**: Encryption key derived from master password using PBKDF2 (480k iterations) — no key file stored on disk
-- **Authentication**: Application access protected by master password
+- **Authentication**: Application access protected by master password (stored as SHA-256 hash)
 - **Local Storage**: Data stored locally in SQLite database, not in the cloud
-- **Salt Management**: Unique salt generated per installation, stored in `.env`
+- **Salt Management**: Unique salt generated per installation, stored alongside database
+- **Auto-Lock**: App automatically locks after 3 minutes of inactivity
 
 ### Password Management
 
-- **Store Passwords**: Save website, username, and password information
-- **Search Functionality**: Quickly find passwords by website name
+- **Notes Field**: Add optional notes to each password entry (e.g., security question answers)
+- **Store Passwords**: Save website, username, password, and notes
+- **Search Functionality**: Quickly find passwords by website name with A-Z / Z-A sort toggle
 - **Update Passwords**: Easily update existing password entries
-- **Delete Entries**: Remove password entries you no longer need
+- **Delete Entries**: Remove password entries with confirmation
+- **Export to CSV**: Export all passwords to a CSV file for backup
 
 ### User Experience
 
+- **First-Time Setup Wizard**: On first launch, guided master password creation
 - **Password Generator**: Create strong, random passwords with a mix of letters, numbers, and symbols
 - **Password Strength Indicator**: Real-time visual feedback on password strength
 - **Clipboard Integration**: Copy passwords to clipboard with one click
 - **Modern UI**: Clean interface built with Flet (Flutter) for a polished, cross-platform experience
 - **Password Counter**: Display showing the number of stored passwords
-- **Notes Field**: Add optional notes to each password entry
-- **Sort Toggle**: Toggle A-Z / Z-A sort in search popup
-- **Auto-Lock**: App automatically locks after 3 minutes of inactivity
-- **Export to CSV**: Export all passwords to a CSV file for backup
-
-### Technical Features
-
-- **Flet Framework**: Modern Python UI framework built on Flutter
-- **SQLAlchemy ORM**: Efficient database interactions
-- **Environment Variables**: Secure configuration using .env files
-- **Cryptography Library**: Industry-standard encryption using Python's cryptography package
+- **Dark Theme**: Modern dark UI using Flet
 
 ## Getting Started
 
 1. Navigate to the project directory:
    ```bash
-   cd path/to/Password-Manager
+   cd Password-Manager
    ```
 
-2. Create a virtual environment (optional if you already have one):
+2. Create and activate a virtual environment (optional if you already have one):
    ```bash
    python3 -m venv .venv
+   source .venv/bin/activate  # macOS/Linux
    ```
 
-3. Activate the virtual environment:
-
-   For macOS/Linux:
-   ```bash
-   source .venv/bin/activate
-   ```
-
-   For Windows:
-   ```bash
-   .\.venv\Scripts\activate
-   ```
-
-4. Install the required packages:
+3. Install the required packages:
    ```bash
    pip install -r requirements.txt
    ```
 
-5. Run the program:
+4. Run the program:
    ```bash
    python3 main.py
    ```
 
-6. When done, deactivate your virtual environment:
-   ```bash
-   deactivate
-   ```
+5. On first run, enter your new master password in the setup wizard.
 
 ## First-Time Setup
 
-On first run, the application will:
-- Initialize the SQLite database (`instance/pwm.db`)
-- Generate a salt (`SALT` in `.env`)
+On first launch with no existing `.env` file, the app shows a **setup wizard** where you:
+1. Create a master password (with strength indicator)
+2. Confirm the password
+3. The app generates a unique salt and stores everything
 
-You'll need to set your master password in the `.env` file:
-```
-KEY=your_master_password_here
-SALT=will_be_generated_on_first_run
-```
-
-Or simply set `KEY` and the app will generate the salt automatically on first login.
+Your data is stored at:
+- **macOS**: `~/Library/Application Support/fern/`
+- **Windows**: `%APPDATA%\fern\`
+- **Linux**: `~/.local/share/fern/`
 
 ## Project Structure
 
 ```
 Password-Manager/
-├── main.py                    # Application entry point
+├── main.py                    # Application entry point (login/main view switching)
 ├── requirements.txt           # Python dependencies
-├── .env                      # Environment variables (KEY, SALT)
-├── instance/
-│   └── pwm.db              # SQLite database
-└── src/
-    ├── database/            # Database models and repository
-    ├── security/            # Authentication and encryption
-    ├── gui/                # Flet UI components
-    └── utils/              # Password generator and strength checker
+├── pyproject.toml            # Flet build configuration
+├── src/
+│   ├── paths.py              # Centralized OS data path resolution
+│   ├── database/
+│   │   ├── __init__.py      # Flask app & SQLAlchemy db init
+│   │   ├── models.py        # Passwords model (site, user, password, notes)
+│   │   └── repository.py    # CRUD operations
+│   ├── security/
+│   │   ├── auth.py          # Master password verification (hashed comparison)
+│   │   └── encryption.py    # Fernet encryption, PBKDF2 key derivation
+│   ├── gui/
+│   │   └── popups.py        # Delete/Update/Search/Settings dialogs
+│   └── utils/
+│       ├── password_gen.py        # Password generator
+│       └── password_strength.py   # Password strength checker
+└── tests/                    # pytest test suite
 ```
 
 ## Testing
-
-The project includes a comprehensive test suite using pytest.
 
 ```bash
 # Run all tests
@@ -118,10 +102,6 @@ pytest tests/
 pytest tests/ --cov=src --cov-report=term-missing
 ```
 
-The test suite covers:
-- **Authentication**: Master password verification (100% coverage)
-- **Password Generator**: Password generation logic (100% coverage)
-- **Password Strength**: Strength checking algorithm (100% coverage)
-- **Encryption**: Encrypt/decrypt functionality including key derivation (tests added)
+The test suite covers authentication, password generation, password strength checking, and encryption.
 
-**_Developed on Python 3.12_**
+**Developed on Python 3.12**
