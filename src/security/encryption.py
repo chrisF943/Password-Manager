@@ -18,15 +18,35 @@ def get_salt() -> str:
     salt = os.getenv("SALT")
     if salt is None:
         salt = os.urandom(SALT_LENGTH).hex()
-        _append_env_var("SALT", salt)
+        _replace_or_append_env_var("SALT", salt)
         os.environ["SALT"] = salt
     return salt
 
 
-def _append_env_var(key: str, value: str):
-    """Append a key=value line to the .env file (absolute path)."""
-    with open(ENV_FILE, "a") as f:
-        f.write(f"\n{key}={value}\n")
+def _replace_or_append_env_var(key: str, value: str):
+    """Replace existing key=value or append key=value line to .env file."""
+    if not os.path.exists(ENV_FILE):
+        with open(ENV_FILE, "w") as f:
+            f.write(f"{key}={value}\n")
+        return
+
+    with open(ENV_FILE, "r") as f:
+        lines = f.readlines()
+
+    key_found = False
+    new_lines = []
+    for line in lines:
+        if line.startswith(f"{key}="):
+            new_lines.append(f"{key}={value}\n")
+            key_found = True
+        else:
+            new_lines.append(line)
+
+    if not key_found:
+        new_lines.append(f"{key}={value}\n")
+
+    with open(ENV_FILE, "w") as f:
+        f.writelines(new_lines)
 
 
 def derive_key(master_password: str, salt: str) -> bytes:
