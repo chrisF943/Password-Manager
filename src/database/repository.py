@@ -2,10 +2,10 @@ from src.database import db, app
 from src.database.models import Passwords
 
 
-def add_password(site: str, username: str, encrypted_password: str) -> Passwords:
+def add_password(site: str, username: str, encrypted_password: str, notes: str = None) -> Passwords:
     """Add a new password entry to the database."""
     with app.app_context():
-        new_entry = Passwords(site=site, user=username, password=encrypted_password)
+        new_entry = Passwords(site=site, user=username, password=encrypted_password, notes=notes)
         db.session.add(new_entry)
         db.session.commit()
         return new_entry
@@ -23,7 +23,7 @@ def get_all_passwords() -> list[Passwords]:
         return Passwords.query.all()
 
 
-def update_password(site: str, new_encrypted_password: str, new_username: str = None) -> bool:
+def update_password(site: str, new_encrypted_password: str, new_username: str = None, new_notes: str = None) -> bool:
     """Update an existing password entry. Returns True if successful."""
     with app.app_context():
         entry = Passwords.query.filter_by(site=site).first()
@@ -31,6 +31,8 @@ def update_password(site: str, new_encrypted_password: str, new_username: str = 
             entry.password = new_encrypted_password
             if new_username is not None:
                 entry.user = new_username
+            if new_notes is not None:
+                entry.notes = new_notes
             db.session.commit()
             return True
         return False

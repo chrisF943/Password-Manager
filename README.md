@@ -25,6 +25,9 @@ Welcome to lockey, a password manager built with Flet (Flutter), SQLAlchemy and 
 - **Clipboard Integration**: Copy passwords to clipboard with one click
 - **Modern UI**: Clean interface built with Flet (Flutter) for a polished, cross-platform experience
 - **Password Counter**: Display showing the number of stored passwords
+- **Notes Field**: Add optional notes to each password entry
+- **Sort Toggle**: Toggle A-Z / Z-A sort in search popup
+- **Auto-Lock**: App automatically locks after 3 minutes of inactivity
 - **Export to CSV**: Export all passwords to a CSV file for backup
 
 ### Technical Features

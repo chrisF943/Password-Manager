@@ -35,11 +35,26 @@ def main(page: ft.Page):
     # Track login state and master password
     is_logged_in = {"value": False}
     master_password_session = {"value": ""}
+    last_activity = {"value": None}  # Track last activity timestamp
+    IDLE_TIMEOUT = 180  # 3 minutes in seconds
+    idle_timer = None  # Track idle timer to prevent leaks
+
+    def record_activity(e=None):
+        """Record last activity time."""
+        import time
+        last_activity["value"] = time.time()
 
     def show_setup_view():
         """Show first-time setup wizard for creating master password."""
+        global idle_timer
         is_logged_in["value"] = False
         master_password_session["value"] = ""
+        last_activity["value"] = None  # Reset idle tracking
+
+        # Cancel any existing timer when logging out
+        if idle_timer is not None:
+            idle_timer.cancel()
+            idle_timer = None
 
         error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
         success_message = ft.Text("", color=ft.Colors.GREEN_400, visible=False)
@@ -173,8 +188,15 @@ def main(page: ft.Page):
 
     def show_login_view():
         """Show the login view."""
+        global idle_timer
         is_logged_in["value"] = False
         master_password_session["value"] = ""
+        last_activity["value"] = None  # Reset idle tracking
+
+        # Cancel any existing timer when logging out
+        if idle_timer is not None:
+            idle_timer.cancel()
+            idle_timer = None
 
         error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
         password_field = ft.TextField(
@@ -243,7 +265,30 @@ def main(page: ft.Page):
 
     def show_main_view():
         """Show the main password manager view."""
+        global idle_timer
         is_logged_in["value"] = True
+
+        # Cancel any existing timer before creating a new one
+        if idle_timer is not None:
+            idle_timer.cancel()
+            idle_timer = None
+
+        # Record initial activity
+        record_activity()
+
+        # Set up idle timer to check every 10 seconds
+        def check_idle():
+            if last_activity["value"] is None:
+                return
+            import time
+            if time.time() - last_activity["value"] > IDLE_TIMEOUT:
+                # Auto-lock: return to login
+                show_login_view()
+
+        import threading
+        idle_timer = threading.Timer(10, check_idle)
+        idle_timer.daemon = True
+        idle_timer.start()
 
         # Check for migration needed
         if needs_migration():
@@ -276,6 +321,7 @@ def main(page: ft.Page):
         )
 
         def on_password_change(e):
+            record_activity(e)
             password = password_field.value
             if not password:
                 strength_bar.visible = False
@@ -296,6 +342,11 @@ def main(page: ft.Page):
             label="Password", password=True, can_reveal_password=True, text_size=14, expand=1,
             on_change=on_password_change,
         )
+        notes_field = ft.TextField(
+            label="Notes (optional)",
+            text_size=14,
+            expand=1,
+        )
 
         # Password count display
         count_text = ft.Text("", size=14, color=ft.Colors.WHITE70)
@@ -306,9 +357,11 @@ def main(page: ft.Page):
             page.update()
 
         def on_add_click(e):
+            record_activity()
             site = site_field.value.strip()
             username = username_field.value.strip()
             password = password_field.value
+            notes = notes_field.value.strip() if notes_field.value else None
 
             if not site or not username or not password:
                 status_text.value = "Please fill in all fields"
@@ -324,11 +377,12 @@ def main(page: ft.Page):
                 return
 
             encrypted = encrypt_password(password, cipher_suite)
-            add_password(site, username, encrypted)
+            add_password(site, username, encrypted, notes)
 
             site_field.value = ""
             username_field.value = ""
             password_field.value = ""
+            notes_field.value = ""
             strength_bar.visible = False
             status_text.value = f"Password for '{site}' added successfully!"
             status_text.color = ft.Colors.GREEN_400
@@ -336,6 +390,7 @@ def main(page: ft.Page):
             page.update()
 
         def on_generate_click(e):
+            record_activity()
             generated = generate_password()
             password_field.value = generated
             on_password_change(None)
@@ -344,15 +399,19 @@ def main(page: ft.Page):
             page.update()
 
         def on_search_click(e):
+            record_activity()
             show_search_popup(page, cipher_suite)
 
         def on_update_click(e):
+            record_activity()
             show_update_popup(page, cipher_suite, update_count)
 
         def on_delete_click(e):
+            record_activity()
             show_delete_popup(page, update_count)
 
         def on_export_click(e):
+            record_activity()
             import csv
             import os
             from src.paths import EXPORT_DIR
@@ -368,13 +427,13 @@ def main(page: ft.Page):
 
                 with open(export_path, 'w', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
-                    writer.writerow(["Site", "Username", "Password"])
+                    writer.writerow(["Site", "Username", "Password", "Notes"])
                     for entry in entries:
                         try:
                             decrypted = decrypt_password(entry.password, cipher_suite)
                         except:
                             decrypted = "***"
-                        writer.writerow([entry.site, entry.user, decrypted])
+                        writer.writerow([entry.site, entry.user, decrypted, entry.notes or ""])
 
                 status_text.value = f"Exported {len(entries)} passwords to passwords_export.csv"
                 status_text.color = ft.Colors.GREEN_400
@@ -385,6 +444,7 @@ def main(page: ft.Page):
                 page.update()
 
         def on_settings_click(e):
+            record_activity()
             show_settings_popup(page, master_password_session, cipher_suite, update_count)
 
         # Header
@@ -415,6 +475,8 @@ def main(page: ft.Page):
                     ft.Container(height=10),
                     ft.Row([password_field], spacing=15, expand=True),
                     strength_bar,
+                    ft.Container(height=10),
+                    ft.Row([notes_field], spacing=15, expand=True),
                     ft.Container(height=15),
                     ft.Row(
                         [
@@ -443,6 +505,11 @@ def main(page: ft.Page):
 
         # Initial count
         update_count()
+
+        # Hook into page events for activity tracking
+        def on_mouse_move(e):
+            record_activity()
+        page.on_mouse_move = on_mouse_move
 
         # Clear and add main view
         page.controls.clear()

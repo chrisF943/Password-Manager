@@ -222,10 +222,12 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
             password=True,
             can_reveal_password=True
         )
+        notes_field = ft.TextField(label="Notes", value=entry.notes or "", multiline=True)
 
         def save_changes(e2):
             new_username = username_field.value
             new_password = password_field.value
+            new_notes = notes_field.value.strip() if notes_field.value else None
 
             if not new_username or not new_password:
                 # Show error dialog
@@ -242,7 +244,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
 
             # Encrypt and update
             encrypted = encrypt_password(new_password, cipher_suite)
-            update_password(site, encrypted, new_username)
+            update_password(site, encrypted, new_username, new_notes)
 
             edit_dlg.open = False
             main_dlg.open = False
@@ -265,6 +267,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                     ft.TextField(label="Website", value=site, read_only=True),
                     username_field,
                     password_field,
+                    notes_field,
                 ], tight=True),
                 width=350,
             ),
@@ -307,10 +310,23 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
 
 
 def show_search_popup(page: ft.Page, cipher_suite):
-    """Show dialog with searchable list of entries."""
+    """Show dialog with searchable and sortable list of entries."""
 
     all_entries = []
     filtered_entries = []
+    sort_ascending = {"value": True}  # Track sort direction
+
+    sort_btn = ft.IconButton(
+        icon=ft.Icons.SORT_BY_ALPHA,
+        tooltip="Toggle sort (A-Z / Z-A)",
+        on_click=lambda e: toggle_sort(),
+    )
+
+    def toggle_sort():
+        sort_ascending["value"] = not sort_ascending["value"]
+        sort_btn.tooltip = "A-Z" if sort_ascending["value"] else "Z-A"
+        load_entries()
+        page.update()
 
     search_field = ft.TextField(
         label="Search",
@@ -318,6 +334,8 @@ def show_search_popup(page: ft.Page, cipher_suite):
         prefix_icon=ft.Icons.SEARCH,
         on_change=lambda e: filter_entries()
     )
+
+    search_row = ft.Row([search_field, sort_btn], spacing=5)
 
     # Container for the list
     list_container = ft.ListView(
@@ -330,7 +348,10 @@ def show_search_popup(page: ft.Page, cipher_suite):
         list_container.controls.clear()
         filter_text = search_field.value.lower() if search_field.value else ""
 
-        for entry in filtered_entries:
+        # Sort entries by site name
+        sorted_entries = sorted(filtered_entries, key=lambda e: e.site.lower(), reverse=not sort_ascending["value"])
+
+        for entry in sorted_entries:
             if filter_text and filter_text not in str(entry.site).lower():
                 continue
             # Decrypt password for display (masked)
@@ -344,7 +365,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
                 ft.Container(
                     content=ft.ListTile(
                         title=ft.Text(str(entry.site)),
-                        subtitle=ft.Text(f"{entry.user} | {masked}"),
+                        subtitle=ft.Text(f"{entry.user} | {masked}" + (f" | Notes: {entry.notes[:30]}..." if entry.notes and len(entry.notes) > 30 else (f" | Notes: {entry.notes}" if entry.notes else ""))),
                         leading=ft.Icon(ft.Icons.LINK, size=20),
                         on_click=lambda e, site=entry.site, pwd=decrypted: copy_password(site, pwd),
                     ),
@@ -401,7 +422,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
         title=ft.Text("Search Passwords"),
         content=ft.Container(
             content=ft.Column([
-                search_field,
+                search_row,
                 ft.Container(
                     content=list_container,
                     height=250,
