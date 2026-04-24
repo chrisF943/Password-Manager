@@ -13,6 +13,7 @@ sys.path.insert(0, str(project_root))
 
 # Set up test environment variables before imports
 os.environ['KEY'] = 'test_master_password'
+os.environ['SALT'] = '12345678901234567890123456789012'
 
 
 @pytest.fixture(scope="function")
@@ -55,4 +56,4 @@ def temp_db():
 def cipher_suite():
     """Create a cipher suite for encryption tests."""
     from src.security.encryption import get_cipher_suite
-    return get_cipher_suite()
+    return get_cipher_suite(os.environ['KEY'])
