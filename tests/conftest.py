@@ -13,7 +13,6 @@ sys.path.insert(0, str(project_root))
 
 # Set up test environment variables before imports
 os.environ['KEY'] = 'test_master_password'
-os.environ['SALT'] = '12345678901234567890123456789012'
 
 
 @pytest.fixture(scope="function")

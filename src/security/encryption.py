@@ -3,10 +3,13 @@ import os
 import hashlib
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
+from src.paths import ENV_FILE, DATA_DIR, ensure_data_dir
 
-load_dotenv()
+ensure_data_dir()
+load_dotenv(ENV_FILE)
 
-KEY_FILE = "encrypt_key.key"
+# Legacy key file path (absolute, in data dir) — only used for one-time migration
+KEY_FILE = os.path.join(DATA_DIR, "encrypt_key.key")
 SALT_LENGTH = 16
 
 
@@ -21,8 +24,8 @@ def get_salt() -> str:
 
 
 def _append_env_var(key: str, value: str):
-    """Append a key=value line to the .env file."""
-    with open(".env", "a") as f:
+    """Append a key=value line to the .env file (absolute path)."""
+    with open(ENV_FILE, "a") as f:
         f.write(f"\n{key}={value}\n")
 
 

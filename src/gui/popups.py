@@ -2,6 +2,7 @@ import flet as ft
 import pyperclip
 from src.database.repository import get_all_passwords, delete_password, update_password
 from src.security.encryption import decrypt_password, encrypt_password
+from src.security.auth import hash_master_password
 
 
 def show_delete_popup(page: ft.Page, on_delete_callback):
@@ -543,25 +544,30 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
             page.update()
             return
 
-        # Update .env with new password
+        # Update .env with new password (use absolute path)
         import os
+        from src.paths import ENV_FILE
 
         # Read current .env
-        env_path = ".env"
         lines = []
-        if os.path.exists(env_path):
-            with open(env_path, "r") as f:
+        if os.path.exists(ENV_FILE):
+            with open(ENV_FILE, "r") as f:
                 lines = f.readlines()
 
-        # Replace KEY line
+        # Replace KEY line (or append if not present) — store HASH, not plaintext
+        key_found = False
         new_lines = []
+        new_hash = hash_master_password(new_pw)
         for line in lines:
             if line.startswith("KEY="):
-                new_lines.append(f"KEY={new_pw}\n")
+                new_lines.append(f"KEY={new_hash}\n")
+                key_found = True
             else:
                 new_lines.append(line)
+        if not key_found:
+            new_lines.append(f"KEY={new_hash}\n")
 
-        with open(env_path, "w") as f:
+        with open(ENV_FILE, "w") as f:
             f.writelines(new_lines)
 
         # Update session password so subsequent operations use new cipher

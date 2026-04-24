@@ -1,0 +1,6 @@
+[tool.flet]
+org = "com.fern"
+product = "fern"
+company = "fern"
+copyright = "Copyright (C) 2025"
+build_number = 1

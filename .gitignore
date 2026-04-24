@@ -156,6 +156,11 @@ cython_debug/
 *.key
 instance/
 
+# flet build output
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
 # Claude related files
 .claude/
 CLAUDE.md

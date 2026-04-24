@@ -3,6 +3,7 @@ Tests for authentication functionality.
 """
 import pytest
 import os
+import hashlib
 from pathlib import Path
 
 # Setup path before imports
@@ -10,8 +11,11 @@ project_root = Path(__file__).parent.parent
 import sys
 sys.path.insert(0, str(project_root))
 
-# Set test environment - uses direct comparison, not hashing
-os.environ['KEY'] = 'test_master_password'
+def _hash(pwd: str) -> str:
+    return hashlib.sha256(pwd.encode()).hexdigest()
+
+# Set test environment - uses HASH comparison now
+os.environ['KEY'] = _hash('test_master_password')
 
 
 class TestAuthentication:
@@ -21,7 +25,7 @@ class TestAuthentication:
         """Test that correct password is verified."""
         from src.security.auth import verify_master_password
 
-        os.environ['KEY'] = 'mysecretpassword'
+        os.environ['KEY'] = _hash('mysecretpassword')
         result = verify_master_password('mysecretpassword')
         assert result is True
 
@@ -29,7 +33,7 @@ class TestAuthentication:
         """Test that incorrect password fails verification."""
         from src.security.auth import verify_master_password
 
-        os.environ['KEY'] = 'mysecretpassword'
+        os.environ['KEY'] = _hash('mysecretpassword')
         result = verify_master_password('wrongpassword')
         assert result is False
 
@@ -37,7 +41,7 @@ class TestAuthentication:
         """Test that empty password handling works."""
         from src.security.auth import verify_master_password
 
-        os.environ['KEY'] = ''
+        os.environ['KEY'] = _hash('')
         result = verify_master_password('')
         assert result is True
 
@@ -45,7 +49,7 @@ class TestAuthentication:
         """Test that empty password fails with non-empty input."""
         from src.security.auth import verify_master_password
 
-        os.environ['KEY'] = ''
+        os.environ['KEY'] = _hash('')
         result = verify_master_password('somepassword')
         assert result is False
 
@@ -54,7 +58,7 @@ class TestAuthentication:
         from src.security.auth import verify_master_password
 
         test_password = "p@ssw0rd!#$%^&*()"
-        os.environ['KEY'] = test_password
+        os.environ['KEY'] = _hash(test_password)
 
         result = verify_master_password(test_password)
         assert result is True
@@ -63,7 +67,7 @@ class TestAuthentication:
         """Test that password verification is case sensitive."""
         from src.security.auth import verify_master_password
 
-        os.environ['KEY'] = 'MySecretPassword'
+        os.environ['KEY'] = _hash('MySecretPassword')
 
         assert verify_master_password('mysecretpassword') is False
         assert verify_master_password('MY SECRETPASSWORD') is False

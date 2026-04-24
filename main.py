@@ -212,6 +212,7 @@ def main(page: ft.Page):
         def on_export_click(e):
             import csv
             import os
+            from src.paths import EXPORT_DIR
             try:
                 entries = get_all_passwords()
                 if not entries:
@@ -220,8 +221,7 @@ def main(page: ft.Page):
                     page.update()
                     return
 
-                export_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
-                export_path = os.path.join(export_dir, "passwords_export.csv")
+                export_path = os.path.join(EXPORT_DIR, "passwords_export.csv")
 
                 with open(export_path, 'w', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
