@@ -10,10 +10,10 @@ from src.database.repository import (
     delete_password as repo_delete_password,
     get_entry_count
 )
-from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password
+from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password, needs_migration, migrateEncryption
 from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
-from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup
+from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup, show_settings_popup
 
 
 def main(page: ft.Page):
@@ -24,12 +24,14 @@ def main(page: ft.Page):
     page.window.height = 750
     page.window.resizable = True
 
-    # Track login state
+    # Track login state and master password
     is_logged_in = {"value": False}
+    master_password_session = {"value": ""}
 
     def show_login_view():
         """Show the login view."""
         is_logged_in["value"] = False
+        master_password_session["value"] = ""
 
         error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
         password_field = ft.TextField(
@@ -49,6 +51,7 @@ def main(page: ft.Page):
 
             if verify_master_password(password):
                 is_logged_in["value"] = True
+                master_password_session["value"] = password
                 password_field.value = ""
                 error_message.visible = False
                 show_main_view()
@@ -99,8 +102,17 @@ def main(page: ft.Page):
         """Show the main password manager view."""
         is_logged_in["value"] = True
 
-        # Initialize cipher suite
-        cipher_suite = get_cipher_suite()
+        # Check for migration needed
+        if needs_migration():
+            try:
+                migrateEncryption(master_password_session["value"])
+                print("Migration complete. Old key file deleted.")
+            except Exception as e:
+                print(f"Migration failed: {e}")
+                # Continue with old cipher anyway — don't block the user
+
+        # Initialize cipher suite using session master password
+        cipher_suite = get_cipher_suite(master_password_session["value"])
 
         # Status message
         status_text = ft.Text("", size=14, color=ft.Colors.GREEN_400)
@@ -229,11 +241,23 @@ def main(page: ft.Page):
                 status_text.color = ft.Colors.RED_400
                 page.update()
 
+        def on_settings_click(e):
+            show_settings_popup(page, master_password_session, cipher_suite, update_count)
+
         # Header
         header = ft.Container(
             content=ft.Row(
-                [ft.Icon(ft.Icons.FOREST, size=40, color=ft.Colors.BLUE_400),
-                 ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE)],
+                [
+                    ft.Icon(ft.Icons.FOREST, size=40, color=ft.Colors.BLUE_400),
+                    ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Container(expand=True),
+                    ft.IconButton(
+                        icon=ft.Icons.SETTINGS,
+                        icon_color=ft.Colors.WHITE70,
+                        on_click=on_settings_click,
+                        tooltip="Settings",
+                    ),
+                ],
                 alignment=ft.MainAxisAlignment.START, spacing=15,
             ), padding=20,
         )
@@ -295,4 +319,4 @@ if __name__ == "__main__":
     init_db()
     print("Initializing database...")
     print("Starting fern...")
-    ft.app(target=main)  # Note: deprecated in 0.80+, but still works
+    ft.app(target=main)
