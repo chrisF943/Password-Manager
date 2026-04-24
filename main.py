@@ -3,17 +3,25 @@ Main application entry point with single-window login/main view switching.
 """
 import flet as ft
 from src.database import init_db
-from src.security.auth import verify_master_password
+from src.security.auth import verify_master_password, hash_master_password
+from src.security.encryption import get_salt
 from src.database.repository import (
     add_password, get_all_passwords, get_password,
     update_password as repo_update_password,
     delete_password as repo_delete_password,
     get_entry_count
 )
-from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password, needs_migration, migrateEncryption
+from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password, needs_migration, migrateEncryption, _replace_or_append_env_var
+from src.paths import ENV_FILE
 from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
 from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup, show_settings_popup
+
+
+def is_master_password_set() -> bool:
+    """Check if master password has been set (KEY exists in .env)."""
+    import os
+    return os.getenv("KEY") is not None
 
 
 def main(page: ft.Page):
@@ -27,6 +35,141 @@ def main(page: ft.Page):
     # Track login state and master password
     is_logged_in = {"value": False}
     master_password_session = {"value": ""}
+
+    def show_setup_view():
+        """Show first-time setup wizard for creating master password."""
+        is_logged_in["value"] = False
+        master_password_session["value"] = ""
+
+        error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
+        success_message = ft.Text("", color=ft.Colors.GREEN_400, visible=False)
+
+        password_field = ft.TextField(
+            label="Create Master Password",
+            password=True,
+            can_reveal_password=True,
+            text_size=16,
+        )
+        confirm_field = ft.TextField(
+            label="Confirm Master Password",
+            password=True,
+            can_reveal_password=True,
+            text_size=16,
+        )
+
+        strength_bar = ft.Container(
+            content=ft.Row([
+                ft.Container(
+                    width=100,
+                    height=6,
+                    bgcolor=ft.Colors.GREY_800,
+                    border_radius=3,
+                    content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+                ),
+                strength_text := ft.Text("", size=12),
+            ], spacing=10),
+            visible=False,
+        )
+
+        def on_password_change(e):
+            password = password_field.value
+            if not password:
+                strength_bar.visible = False
+            else:
+                strength = check_password_strength(password)
+                strength_bar.visible = True
+                bar = strength_bar.content.controls[0]
+                bar.content.width = int(strength["score"] * 25)
+                bar.content.bgcolor = strength["color"]
+                strength_text.value = strength["message"]
+                strength_text.color = strength["color"]
+            page.update()
+
+        password_field.on_change = on_password_change
+
+        def on_setup_click(e):
+            password = password_field.value
+            confirm = confirm_field.value
+
+            if not password or not confirm:
+                error_message.value = "Please fill in both fields"
+                error_message.visible = True
+                success_message.visible = False
+                page.update()
+                return
+
+            if password != confirm:
+                error_message.value = "Passwords do not match"
+                error_message.visible = True
+                success_message.visible = False
+                page.update()
+                return
+
+            strength = check_password_strength(password)
+            if strength["score"] < 0.3:
+                error_message.value = "Password is too weak. Use a stronger password."
+                error_message.visible = True
+                success_message.visible = False
+                page.update()
+                return
+
+            # Save hashed password to .env
+            password_hash = hash_master_password(password)
+            _replace_or_append_env_var("KEY", password_hash)
+            # Ensure salt exists
+            get_salt()
+
+            is_logged_in["value"] = True
+            master_password_session["value"] = password
+            success_message.value = "Password created! Setting up..."
+            success_message.visible = True
+            error_message.visible = False
+            page.update()
+
+            import time
+            time.sleep(0.5)
+            show_main_view()
+
+        confirm_field.on_submit = on_setup_click
+
+        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ft.Colors.BLUE_400)
+
+        page.controls.clear()
+        page.add(
+            ft.Container(
+                content=ft.Column(
+                    [
+                        fern_icon,
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text("First-time setup", size=14, color=ft.Colors.WHITE54),
+                        ft.Container(height=20),
+                        password_field,
+                        strength_bar,
+                        ft.Container(height=10),
+                        confirm_field,
+                        error_message,
+                        success_message,
+                        ft.Container(height=10),
+                        ft.ElevatedButton(
+                            content=ft.Row(
+                                [ft.Icon(ft.Icons.FOREST, size=20), ft.Text("Create Password")],
+                                spacing=10,
+                                alignment=ft.MainAxisAlignment.CENTER,
+                            ),
+                            width=220,
+                            height=45,
+                            on_click=on_setup_click,
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=5,
+                ),
+                alignment=ft.alignment.Alignment(0, 0),
+                expand=True,
+                padding=30,
+            )
+        )
 
     def show_login_view():
         """Show the login view."""
@@ -311,8 +454,11 @@ def main(page: ft.Page):
             )
         )
 
-    # Start with login view
-    show_login_view()
+    # Start with setup view if first time, otherwise login
+    if is_master_password_set():
+        show_login_view()
+    else:
+        show_setup_view()
 
 
 if __name__ == "__main__":
