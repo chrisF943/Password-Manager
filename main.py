@@ -17,6 +17,9 @@ from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
 from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup, show_settings_popup
 
+# Module-level idle timer tracking
+idle_timer = None  # Track idle timer to prevent leaks
+
 
 def is_master_password_set() -> bool:
     """Check if master password has been set (KEY exists in .env)."""
@@ -37,7 +40,6 @@ def main(page: ft.Page):
     master_password_session = {"value": ""}
     last_activity = {"value": None}  # Track last activity timestamp
     IDLE_TIMEOUT = 180  # 3 minutes in seconds
-    idle_timer = None  # Track idle timer to prevent leaks
 
     def record_activity(e=None):
         """Record last activity time."""
