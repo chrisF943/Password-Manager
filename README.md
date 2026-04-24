@@ -6,10 +6,10 @@ Welcome to lockey, a password manager built with Flet (Flutter), SQLAlchemy and 
 
 ### Security
 
-- **Encryption**: All passwords are encrypted using Fernet symmetric encryption
+- **Key Derivation**: Encryption key derived from master password using PBKDF2 (480k iterations) — no key file stored on disk
 - **Authentication**: Application access protected by master password
 - **Local Storage**: Data stored locally in SQLite database, not in the cloud
-- **Key Management**: Automatic encryption key generation and storage for consistent data access
+- **Salt Management**: Unique salt generated per installation, stored in `.env`
 
 ### Password Management
 
@@ -77,12 +77,15 @@ Welcome to lockey, a password manager built with Flet (Flutter), SQLAlchemy and 
 
 On first run, the application will:
 - Initialize the SQLite database (`instance/pwm.db`)
-- Generate an encryption key (`encrypt_key.key`)
+- Generate a salt (`SALT` in `.env`)
 
 You'll need to set your master password in the `.env` file:
 ```
 KEY=your_master_password_here
+SALT=will_be_generated_on_first_run
 ```
+
+Or simply set `KEY` and the app will generate the salt automatically on first login.
 
 ## Project Structure
 
@@ -90,8 +93,7 @@ KEY=your_master_password_here
 Password-Manager/
 ├── main.py                    # Application entry point
 ├── requirements.txt           # Python dependencies
-├── .env                      # Environment variables
-├── encrypt_key.key          # Encryption key
+├── .env                      # Environment variables (KEY, SALT)
 ├── instance/
 │   └── pwm.db              # SQLite database
 └── src/
@@ -116,7 +118,7 @@ pytest tests/ --cov=src --cov-report=term-missing
 The test suite covers:
 - **Authentication**: Master password verification (100% coverage)
 - **Password Generator**: Password generation logic (100% coverage)
-- **Password Strength**: Strength checking algorithm (96% coverage)
-- **Encryption**: Encrypt/decrypt functionality (62% coverage)
+- **Password Strength**: Strength checking algorithm (100% coverage)
+- **Encryption**: Encrypt/decrypt functionality including key derivation (tests added)
 
 **_Developed on Python 3.12_**
