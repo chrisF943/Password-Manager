@@ -116,3 +116,22 @@ def test_encrypt_decrypt_roundtrip():
     encrypted = encrypt_password(plaintext, fernet)
     decrypted = decrypt_password(encrypted, fernet)
     assert decrypted == plaintext
+
+
+def test_get_salt_returns_string():
+    """get_salt should return a string."""
+    salt = get_salt()
+    assert isinstance(salt, str)
+
+
+def test_get_salt_length():
+    """get_salt should return a 32-character hex string (16 bytes)."""
+    salt = get_salt()
+    assert len(salt) == 32
+
+
+def test_get_salt_same_on_multiple_calls():
+    """get_salt should return the same salt on subsequent calls."""
+    salt1 = get_salt()
+    salt2 = get_salt()
+    assert salt1 == salt2
