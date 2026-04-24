@@ -419,3 +419,202 @@ def show_search_popup(page: ft.Page, cipher_suite):
     )
 
     page.show_dialog(main_dlg)
+
+
+def show_settings_popup(page: ft.Page, master_password_session: dict, current_cipher, on_update_callback):
+    """Show settings dialog for changing master password."""
+
+    current_password_field = ft.TextField(
+        label="Current Password",
+        password=True,
+        can_reveal_password=True,
+        text_size=14,
+        expand=1,
+    )
+    new_password_field = ft.TextField(
+        label="New Password",
+        password=True,
+        can_reveal_password=True,
+        text_size=14,
+        expand=1,
+    )
+    confirm_password_field = ft.TextField(
+        label="Confirm New Password",
+        password=True,
+        can_reveal_password=True,
+        text_size=14,
+        expand=1,
+    )
+
+    # Strength indicator for new password
+    strength_bar = ft.Container(
+        content=ft.Row([
+            ft.Container(
+                width=100,
+                height=6,
+                bgcolor=ft.Colors.GREY_800,
+                border_radius=3,
+                content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+            ),
+            strength_text := ft.Text("", size=12),
+        ], spacing=10),
+        visible=False,
+    )
+
+    def on_new_password_change(e):
+        password = new_password_field.value
+        if not password:
+            strength_bar.visible = False
+        else:
+            from src.utils.password_strength import check_password_strength
+            strength = check_password_strength(password)
+            strength_bar.visible = True
+            bar = strength_bar.content.controls[0]
+            bar.content.width = int(strength["score"] * 25)
+            bar.content.bgcolor = strength["color"]
+            strength_text.value = strength["message"]
+            strength_text.color = strength["color"]
+        page.update()
+
+    new_password_field.on_change = on_new_password_change
+
+    status_text = ft.Text("", size=13, color=ft.Colors.RED_400, visible=False)
+
+    def change_password(e):
+        status_text.visible = True
+        current_pw = current_password_field.value
+        new_pw = new_password_field.value
+        confirm_pw = confirm_password_field.value
+
+        # Validate current password
+        from src.security.auth import verify_master_password
+        if not verify_master_password(current_pw):
+            status_text.value = "Current password is incorrect."
+            page.update()
+            return
+
+        # Validate new passwords match
+        if new_pw != confirm_pw:
+            status_text.value = "New passwords do not match."
+            status_text.color = ft.Colors.RED_400
+            page.update()
+            return
+
+        # Validate new password is not empty
+        if not new_pw:
+            status_text.value = "New password cannot be empty."
+            status_text.color = ft.Colors.RED_400
+            page.update()
+            return
+
+        # Validate password strength
+        from src.utils.password_strength import check_password_strength
+        strength = check_password_strength(new_pw)
+        if strength["score"] < 0.3:
+            status_text.value = "New password is too weak. Use a stronger password."
+            status_text.color = ft.Colors.RED_400
+            page.update()
+            return
+
+        # Re-encrypt all passwords
+        from src.security.encryption import (
+            get_cipher_suite, encrypt_password, decrypt_password
+        )
+        from src.database.repository import get_all_passwords, update_password
+
+        old_cipher = current_cipher
+        new_cipher = get_cipher_suite(new_pw)
+
+        entries = get_all_passwords()
+        success = 0
+        errors = 0
+        for entry in entries:
+            try:
+                decrypted = decrypt_password(entry.password, old_cipher)
+                new_encrypted = encrypt_password(decrypted, new_cipher)
+                update_password(entry.site, new_encrypted, entry.user)
+                success += 1
+            except Exception:
+                errors += 1
+
+        if errors > 0:
+            status_text.value = f"Failed to re-encrypt {errors} entries. Password NOT changed."
+            status_text.color = ft.Colors.RED_400
+            page.update()
+            return
+
+        # Update .env with new password
+        import os
+
+        # Read current .env
+        env_path = ".env"
+        lines = []
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
+                lines = f.readlines()
+
+        # Replace KEY line
+        new_lines = []
+        for line in lines:
+            if line.startswith("KEY="):
+                new_lines.append(f"KEY={new_pw}\n")
+            else:
+                new_lines.append(line)
+
+        with open(env_path, "w") as f:
+            f.writelines(new_lines)
+
+        # Update session password so subsequent operations use new cipher
+        master_password_session["value"] = new_pw
+
+        # Notify caller to refresh UI
+        if on_update_callback:
+            on_update_callback()
+
+        # Success
+        settings_dlg.open = False
+        page.update()
+
+        success_dlg = ft.AlertDialog(
+            title=ft.Text("Success"),
+            content=ft.Text(f"Master password changed. {success} passwords re-encrypted."),
+            actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_success(success_dlg))],
+        )
+        def close_success(dlg):
+            dlg.open = False
+            page.update()
+        page.show_dialog(success_dlg)
+
+    def close_popup(e):
+        settings_dlg.open = False
+        page.update()
+
+    settings_dlg = ft.AlertDialog(
+        title=ft.Text("Settings"),
+        content=ft.Container(
+            content=ft.Column([
+                ft.Text("Change Master Password", size=16, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
+                ft.Container(height=10),
+                current_password_field,
+                ft.Container(height=8),
+                new_password_field,
+                strength_bar,
+                ft.Container(height=8),
+                confirm_password_field,
+                ft.Container(height=5),
+                status_text,
+            ], tight=True),
+            width=400,
+        ),
+        actions=[
+            ft.TextButton(content=ft.Text("Cancel"), on_click=close_popup),
+            ft.ElevatedButton(
+                content=ft.Row([ft.Icon(ft.Icons.CHECK, size=16), ft.Text("Change Password")], spacing=5),
+                on_click=change_password,
+                height=38,
+            ),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    page.show_dialog(settings_dlg)
