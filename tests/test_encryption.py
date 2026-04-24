@@ -69,3 +69,50 @@ class TestEncryption:
         # Fernet token is base64 encoded, length varies
         assert isinstance(encrypted, str)
         assert len(encrypted) > 0
+
+
+# Tests for derive_key and get_salt functions
+
+import os
+from src.security.encryption import derive_key, get_salt
+from cryptography.fernet import Fernet
+
+
+def test_derive_key_produces_valid_fernet_key():
+    """Derived key should be a valid Fernet key."""
+    key = derive_key("mypassword", "mysalt")
+    assert isinstance(key, bytes)
+    # Should be 32 bytes (key) that Fernet can use
+    fernet = Fernet(key)
+    assert fernet is not None
+
+
+def test_derive_key_same_inputs_produce_same_key():
+    """Same password + salt should produce same key."""
+    key1 = derive_key("mypassword", "mysalt")
+    key2 = derive_key("mypassword", "mysalt")
+    assert key1 == key2
+
+
+def test_derive_key_different_salts_produce_different_keys():
+    """Same password + different salt should produce different keys."""
+    key1 = derive_key("mypassword", "salt1")
+    key2 = derive_key("mypassword", "salt2")
+    assert key1 != key2
+
+
+def test_derive_key_different_passwords_produce_different_keys():
+    """Different password + same salt should produce different keys."""
+    key1 = derive_key("password1", "mysalt")
+    key2 = derive_key("password2", "mysalt")
+    assert key1 != key2
+
+
+def test_encrypt_decrypt_roundtrip():
+    """Encrypted and decrypted password should match original."""
+    key = derive_key("mypassword", "mysalt")
+    fernet = Fernet(key)
+    plaintext = "mysecretpassword"
+    encrypted = encrypt_password(plaintext, fernet)
+    decrypted = decrypt_password(encrypted, fernet)
+    assert decrypted == plaintext
