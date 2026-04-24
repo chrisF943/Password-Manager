@@ -1,259 +1,298 @@
-import random
-import ttkbootstrap as ttk
-from tkinter import messagebox
-import pyperclip
-import os
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String
-from cryptography.fernet import Fernet
-import getpass
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Initialize Flask application
-app = Flask(__name__)
-
-# File to store encryption key
-key_file = "encrypt_key.key"
-
-# Initialize encryption key - either load existing or create new
-try:
-    if not os.path.exists(key_file):
-        # Generate new key if file doesn't exist
-        fernet_key = Fernet.generate_key()
-        with open(key_file, "wb") as f:
-            f.write(fernet_key)
-            print("Existing encryption key not found. New key created.")
-    else:
-        # Load existing key
-        with open(key_file, "rb") as f:
-            fernet_key = f.read()
-            print("Existing encryption key found. Loading key.")
-except Exception as e:
-    # Fallback if key loading fails
-    print(f"Error: {e}")
-    fernet_key = Fernet.generate_key()
-    with open(key_file, "wb") as f:
-        f.write(fernet_key)
-        print("Unable to load existing key. New key created.")
-
-# Create cipher suite for encryption/decryption
-if fernet_key is not None:
-    cipher_suite = Fernet(fernet_key)
-    print("Cipher suite created.")
-else:
-    print("Unable to create cipher suite.")
+"""
+Main application entry point with single-window login/main view switching.
+"""
+import flet as ft
+from src.database import init_db
+from src.security.auth import verify_master_password
+from src.database.repository import (
+    add_password, get_all_passwords, get_password,
+    update_password as repo_update_password,
+    delete_password as repo_delete_password,
+    get_entry_count
+)
+from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password
+from src.utils.password_gen import generate_password
+from src.utils.password_strength import check_password_strength
+from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup
 
 
-# SQLAlchemy base class for models
-class Base(DeclarativeBase):
-    pass
+def main(page: ft.Page):
+    """Main application with login state switching."""
+    page.title = "fern"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.window.width = 900
+    page.window.height = 750
+    page.window.resizable = True
 
+    # Track login state
+    is_logged_in = {"value": False}
 
-# Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pwm.db'
-db = SQLAlchemy(model_class=Base)
-db.init_app(app)
+    def show_login_view():
+        """Show the login view."""
+        is_logged_in["value"] = False
 
-
-# Password entry model
-class Passwords(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    site: Mapped[str] = mapped_column(String(100), nullable=False)  # Website or application name
-    user: Mapped[str] = mapped_column(String(100), nullable=False)  # Username or email
-    password: Mapped[str] = mapped_column(String(100), nullable=False)  # Encrypted password
-
-
-# Uncomment to initialize database on first run
-# with app.app_context():
-#     db.create_all()
-
-
-# Generate a random password with specific character requirements
-def generate_pw():
-    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
-               'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-               'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-    numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    symbols = ['!', '#', '$', '%', '&', '(', ')', '*', '+']
-
-    nr_letters = random.randint(6, 6)
-    nr_symbols = random.randint(3, 3)
-    nr_numbers = random.randint(3, 3)
-
-    password_letters = [random.choice(letters) for _ in range(nr_letters)]
-    password_symbols = [random.choice(symbols) for _ in range(nr_symbols)]
-    password_numbers = [random.choice(numbers) for _ in range(nr_numbers)]
-
-    password_list = password_letters + password_numbers + password_symbols
-
-    random.shuffle(password_list)
-
-    # Create final password string
-    password = "".join(password_list)
-    pw_text.insert(0, password)
-    pyperclip.copy(password)
-
-
-# Update the password count meter
-def get_entry_count():
-    with app.app_context():
-        count = Passwords.query.count()
-        entries_meter.configure(amountused=count)
-        entries_meter.configure(subtext=f"Stored Passwords: {count}")
-
-
-# Save new password entry to database
-def fetch_fields():
-    # Validate that all fields are filled
-    if len(web_text.get()) == 0 or len(user_text.get()) == 0 or len(pw_text.get()) == 0:
-        messagebox.showwarning(title="Error", message="You have left a field blank.")
-    else:
-        # Encrypt password before storing
-        encrypted_pw = cipher_suite.encrypt(pw_text.get().encode()).decode()
-        new_entry = Passwords(
-            site=web_text.get(),
-            user=user_text.get(),
-            password=encrypted_pw
+        error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
+        password_field = ft.TextField(
+            label="Master Password",
+            password=True,
+            can_reveal_password=True,
+            text_size=16,
         )
 
-        with app.app_context():
-            db.session.add(new_entry)
-            db.session.commit()
+        def on_login_click(e):
+            password = password_field.value
+            if not password:
+                error_message.value = "Please enter a password"
+                error_message.visible = True
+                page.update()
+                return
 
-        # Clear input fields
-        web_text.delete(0, ttk.END)
-        pw_text.delete(0, ttk.END)
+            if verify_master_password(password):
+                is_logged_in["value"] = True
+                password_field.value = ""
+                error_message.visible = False
+                show_main_view()
+            else:
+                error_message.value = "Incorrect password"
+                error_message.visible = True
+                password_field.value = ""
+            page.update()
 
-        get_entry_count()
-        messagebox.showinfo(title="Success", message="Entry added.")
+        password_field.on_submit = on_login_click
 
+        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ft.Colors.BLUE_400)
 
-# Search for password by website name
-def search():
-    with app.app_context():
-        # Find entry matching website name
-        search_entry = Passwords.query.filter_by(site=web_text.get()).first()
-        if search_entry:
-            # Decrypt password for display
-            decrypted_pw = cipher_suite.decrypt(search_entry.password.encode()).decode()
-            messagebox.showinfo(title=web_text.get(),
-                                message=f"Username: {search_entry.user}\nPassword: {decrypted_pw}")
-        else:
-            messagebox.showwarning(title="Error", message="No entry found.")
-
-
-# Update existing password
-def update():
-    with app.app_context():
-        # Find entry matching website name
-        search_entry = Passwords.query.filter_by(site=web_text.get()).first()
-        if search_entry:
-            # Encrypt and update password
-            new_pw = cipher_suite.encrypt(pw_text.get().encode()).decode()
-            search_entry.password = new_pw
-            db.session.commit()
-
-            web_text.delete(0, ttk.END)
-            pw_text.delete(0, ttk.END)
-            messagebox.showinfo(title="Success", message="Password updated.")
-        else:
-            messagebox.showwarning(title="Error", message="No entry found.")
-
-
-# Delete password entry
-def delete():
-    with app.app_context():
-        # Find entry matching website name
-        search_entry = Passwords.query.filter_by(site=web_text.get()).first()
-        if search_entry:
-            db.session.delete(search_entry)
-            db.session.commit()
-
-            web_text.delete(0, ttk.END)
-            get_entry_count()
-            messagebox.showinfo(title="Success", message="Entry deleted.")
-        else:
-            messagebox.showwarning(title="Error", message="No entry found.")
-
-
-# Authentication loop - requires correct password from .env file
-auth = ""
-while auth != os.getenv("KEY"):
-    # Hides password input when running in terminal
-    auth = getpass.getpass("Enter Password: ")
-    if auth == os.getenv("KEY"):
-        print("Welcome to your Password Manager")
-
-        # Initialize main application window
-        window = ttk.Window(themename="solar")
-        window.title("Password Manager")
-        window.config(padx=50, pady=50)
-
-        canvas = ttk.Canvas(width=200, height=200)
-        background_img = ttk.PhotoImage(file="/Users/chrisfaris/Desktop/python/Password Manager/images/lock.png")
-        canvas.create_image(100, 100, image=background_img)
-        canvas.grid(column=2, row=1)
-
-        welcome_label = ttk.Label(text="Welcome to your Password Manager", font=("Arial", 16, "bold"))
-        welcome_label.grid(column=1, row=0)
-
-        # Password count meter
-        entries_meter = ttk.Meter(
-            window,
-            bootstyle="info",
-            amountused=0,
-            amounttotal=100,
-            metersize=180,
-            stripethickness=10,
-            interactive=False
+        page.controls.clear()
+        page.add(
+            ft.Container(
+                content=ft.Column(
+                    [
+                        fern_icon,
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text("Enter your master password", size=14, color=ft.Colors.WHITE54),
+                        ft.Container(height=20),
+                        password_field,
+                        error_message,
+                        ft.Container(height=10),
+                        ft.ElevatedButton(
+                            content=ft.Row(
+                                [ft.Icon(ft.Icons.FOREST, size=20), ft.Text("Unlock")],
+                                spacing=10,
+                                alignment=ft.MainAxisAlignment.CENTER,
+                            ),
+                            width=200,
+                            height=45,
+                            on_click=on_login_click,
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=5,
+                ),
+                alignment=ft.alignment.Alignment(0, 0),
+                expand=True,
+                padding=30,
+            )
         )
-        entries_meter.grid(column=1, row=1)
 
-        # Update the meter immediately when GUI opens
-        get_entry_count()
+    def show_main_view():
+        """Show the main password manager view."""
+        is_logged_in["value"] = True
 
-        web_label = ttk.Label(text="Website:")
-        web_label.grid(column=0, row=2)
-        web_text = ttk.Entry(width=35, bootstyle="info")
-        web_text.focus()
-        web_text.grid(column=1, row=2, sticky="EW")
+        # Initialize cipher suite
+        cipher_suite = get_cipher_suite()
 
-        user_label = ttk.Label(text="Email/Username:")
-        user_label.grid(column=0, row=3)
-        user_text = ttk.Entry(width=35, bootstyle="info")
-        user_text.grid(column=1, row=3, sticky="EW")
+        # Status message
+        status_text = ft.Text("", size=14, color=ft.Colors.GREEN_400)
 
-        pw_label = ttk.Label(text="Password:")
-        pw_label.grid(column=0, row=4)
-        pw_text = ttk.Entry(width=21, bootstyle="info")
-        pw_text.grid(column=1, row=4, sticky="EW")
+        # Password strength indicator
+        strength_bar = ft.Container(
+            content=ft.Row([
+                ft.Container(
+                    width=100,
+                    height=6,
+                    bgcolor=ft.Colors.GREY_800,
+                    border_radius=3,
+                    content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+                ),
+                strength_text := ft.Text("", size=12),
+            ], spacing=10),
+            visible=False,
+        )
 
-        search_button = ttk.Button(text="Search", command=search, bootstyle="info")
-        search_button.grid(column=2, row=2, sticky="EW")
+        def on_password_change(e):
+            password = password_field.value
+            if not password:
+                strength_bar.visible = False
+            else:
+                strength = check_password_strength(password)
+                strength_bar.visible = True
+                bar = strength_bar.content.controls[0]
+                bar.content.width = int(strength["score"] * 25)
+                bar.content.bgcolor = strength["color"]
+                strength_text.value = strength["message"]
+                strength_text.color = strength["color"]
+            page.update()
 
-        update_button = ttk.Button(text="Update", command=update, bootstyle="warning")
-        update_button.grid(column=2, row=4, sticky="EW")
+        # Form fields
+        site_field = ft.TextField(label="Website / App Name", text_size=14, expand=1)
+        username_field = ft.TextField(label="Username / Email", text_size=14, expand=1)
+        password_field = ft.TextField(
+            label="Password", password=True, can_reveal_password=True, text_size=14, expand=1,
+            on_change=on_password_change,
+        )
 
-        delete_button = ttk.Button(text="Delete", command=delete, bootstyle="danger")
-        delete_button.grid(column=2, row=5, sticky="EW")
+        # Password count display
+        count_text = ft.Text("", size=14, color=ft.Colors.WHITE70)
 
-        generate_button = ttk.Button(text="Generate Password", command=generate_pw, bootstyle="light")
-        generate_button.grid(column=2, row=3, sticky="EW")
+        def update_count():
+            count = get_entry_count()
+            count_text.value = f"Total passwords stored: {count}"
+            page.update()
 
-        add_button = ttk.Button(text="Add", command=fetch_fields, bootstyle="success")
-        add_button.grid(column=1, row=5, sticky="EW")
+        def on_add_click(e):
+            site = site_field.value.strip()
+            username = username_field.value.strip()
+            password = password_field.value
 
-        # Start the GUI event loop
-        window.mainloop()
+            if not site or not username or not password:
+                status_text.value = "Please fill in all fields"
+                status_text.color = ft.Colors.RED_400
+                page.update()
+                return
 
-    else:
-        print("Incorrect Password")
-        retry = input("Would you like to try again? (Y/N): ").upper()
-        if retry != 'Y':
-            print("Exiting program...")
-            break
+            existing = get_password(site)
+            if existing:
+                status_text.value = f"Entry for '{site}' already exists. Use Update to modify."
+                status_text.color = ft.Colors.ORANGE_400
+                page.update()
+                return
+
+            encrypted = encrypt_password(password, cipher_suite)
+            add_password(site, username, encrypted)
+
+            site_field.value = ""
+            username_field.value = ""
+            password_field.value = ""
+            strength_bar.visible = False
+            status_text.value = f"Password for '{site}' added successfully!"
+            status_text.color = ft.Colors.GREEN_400
+            update_count()
+            page.update()
+
+        def on_generate_click(e):
+            generated = generate_password()
+            password_field.value = generated
+            on_password_change(None)
+            status_text.value = "Password generated!"
+            status_text.color = ft.Colors.BLUE_400
+            page.update()
+
+        def on_search_click(e):
+            show_search_popup(page, cipher_suite)
+
+        def on_update_click(e):
+            show_update_popup(page, cipher_suite, update_count)
+
+        def on_delete_click(e):
+            show_delete_popup(page, update_count)
+
+        def on_export_click(e):
+            import csv
+            import os
+            try:
+                entries = get_all_passwords()
+                if not entries:
+                    status_text.value = "No passwords to export"
+                    status_text.color = ft.Colors.ORANGE_400
+                    page.update()
+                    return
+
+                export_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
+                export_path = os.path.join(export_dir, "passwords_export.csv")
+
+                with open(export_path, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Site", "Username", "Password"])
+                    for entry in entries:
+                        try:
+                            decrypted = decrypt_password(entry.password, cipher_suite)
+                        except:
+                            decrypted = "***"
+                        writer.writerow([entry.site, entry.user, decrypted])
+
+                status_text.value = f"Exported {len(entries)} passwords to passwords_export.csv"
+                status_text.color = ft.Colors.GREEN_400
+                page.update()
+            except Exception as ex:
+                status_text.value = f"Export failed: {ex}"
+                status_text.color = ft.Colors.RED_400
+                page.update()
+
+        # Header
+        header = ft.Container(
+            content=ft.Row(
+                [ft.Icon(ft.Icons.FOREST, size=40, color=ft.Colors.BLUE_400),
+                 ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE)],
+                alignment=ft.MainAxisAlignment.START, spacing=15,
+            ), padding=20,
+        )
+
+        # Form card
+        form_card = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("Add New Password", size=20, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
+                    ft.Container(height=15),
+                    ft.Row([site_field, username_field], spacing=15, expand=True),
+                    ft.Container(height=10),
+                    ft.Row([password_field], spacing=15, expand=True),
+                    strength_bar,
+                    ft.Container(height=15),
+                    ft.Row(
+                        [
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.ADD, size=18), ft.Text("Add")], spacing=5), on_click=on_add_click, height=40),
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.AUTO_AWESOME, size=18), ft.Text("Generate")], spacing=5), on_click=on_generate_click, height=40),
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.SEARCH, size=18), ft.Text("Search")], spacing=5), on_click=on_search_click, height=40),
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.EDIT, size=18), ft.Text("Update")], spacing=5), on_click=on_update_click, height=40),
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.DELETE, size=18), ft.Text("Delete")], spacing=5), on_click=on_delete_click, height=40, bgcolor=ft.Colors.RED_700),
+                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.DOWNLOAD, size=18), ft.Text("Export")], spacing=5), on_click=on_export_click, height=40),
+                        ], spacing=10, wrap=True,
+                    ),
+                    ft.Container(height=15),
+                    status_text,
+                ], spacing=0,
+            ), padding=25, border_radius=10, bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+        )
+
+        # Info section
+        info_section = ft.Container(
+            content=ft.Row(
+                [ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE54),
+                 ft.Text("Passwords are encrypted using Fernet (AES) symmetric encryption.", size=12, color=ft.Colors.WHITE54)],
+                spacing=10,
+            ), padding=15,
+        )
+
+        # Initial count
+        update_count()
+
+        # Clear and add main view
+        page.controls.clear()
+        page.add(
+            ft.Column(
+                [header, ft.Container(height=10), form_card, ft.Container(height=10), count_text,
+                 ft.Container(expand=True), info_section],
+                spacing=0, scroll=ft.ScrollMode.AUTO,
+            )
+        )
+
+    # Start with login view
+    show_login_view()
+
+
+if __name__ == "__main__":
+    init_db()
+    print("Initializing database...")
+    print("Starting fern...")
+    ft.app(target=main)  # Note: deprecated in 0.80+, but still works

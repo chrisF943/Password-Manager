@@ -1,9 +1,6 @@
 ## Overview
 
-A Python password manager app using Tkinter, SQLAlchemy and SQLite, that helps you manage and store your passwords
-locally and securely. Built with Python, it provides an intuitive graphical interface for creating, retrieving,
-updating, and deleting password entries. All passwords are encrypted using Fernet symmetric encryption to ensure your
-sensitive information remains protected.
+Welcome to lockey, a password manager built with Flet (Flutter), SQLAlchemy and SQLite, that helps you manage and store your passwords locally and securely. Built with Python, it provides an intuitive graphical interface for creating, retrieving, updating, and deleting password entries. All passwords are encrypted using Fernet symmetric encryption to ensure your sensitive information remains protected.
 
 ## Key Features
 
@@ -24,31 +21,32 @@ sensitive information remains protected.
 ### User Experience
 
 - **Password Generator**: Create strong, random passwords with a mix of letters, numbers, and symbols
-- **Clipboard Integration**: Automatically copy generated passwords to clipboard
-- **Modern UI**: Clean interface built with ttkbootstrap for an enhanced Tkinter experience
-- **Password Counter**: Visual meter showing the number of stored passwords
+- **Password Strength Indicator**: Real-time visual feedback on password strength
+- **Clipboard Integration**: Copy passwords to clipboard with one click
+- **Modern UI**: Clean interface built with Flet (Flutter) for a polished, cross-platform experience
+- **Password Counter**: Display showing the number of stored passwords
+- **Export to CSV**: Export all passwords to a CSV file for backup
 
 ### Technical Features
 
+- **Flet Framework**: Modern Python UI framework built on Flutter
 - **SQLAlchemy ORM**: Efficient database interactions
 - **Environment Variables**: Secure configuration using .env files
 - **Cryptography Library**: Industry-standard encryption using Python's cryptography package
 
 ## Getting Started
 
-1. Navigate to the directory where you have cloned the project:
+1. Navigate to the project directory:
    ```bash
-   cd path/to/project
+   cd path/to/Password-Manager
    ```
-   or on Windows:
-   ```bash
-   cd path\to\project
-   ```
-2. Create a virtual environment (You can skip to the next step if you already have one):
+
+2. Create a virtual environment (optional if you already have one):
    ```bash
    python3 -m venv .venv
    ```
-3. Activate your virtual environment:
+
+3. Activate the virtual environment:
 
    For macOS/Linux:
    ```bash
@@ -59,21 +57,66 @@ sensitive information remains protected.
    ```bash
    .\.venv\Scripts\activate
    ```
+
 4. Install the required packages:
    ```bash
    pip install -r requirements.txt
    ```
-    - *Optional* Verify packages are installed:
-      ```bash
-      pip list
-      ```
+
 5. Run the program:
    ```bash
    python3 main.py
    ```
+
 6. When done, deactivate your virtual environment:
    ```bash
    deactivate
    ```
+
+## First-Time Setup
+
+On first run, the application will:
+- Initialize the SQLite database (`instance/pwm.db`)
+- Generate an encryption key (`encrypt_key.key`)
+
+You'll need to set your master password in the `.env` file:
+```
+KEY=your_master_password_here
+```
+
+## Project Structure
+
+```
+Password-Manager/
+├── main.py                    # Application entry point
+├── requirements.txt           # Python dependencies
+├── .env                      # Environment variables
+├── encrypt_key.key          # Encryption key
+├── instance/
+│   └── pwm.db              # SQLite database
+└── src/
+    ├── database/            # Database models and repository
+    ├── security/            # Authentication and encryption
+    ├── gui/                # Flet UI components
+    └── utils/              # Password generator and strength checker
+```
+
+## Testing
+
+The project includes a comprehensive test suite using pytest.
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run tests with coverage report
+pytest tests/ --cov=src --cov-report=term-missing
+```
+
+The test suite covers:
+- **Authentication**: Master password verification (100% coverage)
+- **Password Generator**: Password generation logic (100% coverage)
+- **Password Strength**: Strength checking algorithm (96% coverage)
+- **Encryption**: Encrypt/decrypt functionality (62% coverage)
 
 **_Developed on Python 3.12_**
