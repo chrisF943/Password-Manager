@@ -278,14 +278,20 @@ def main(page: ft.Page):
         # Record initial activity
         record_activity()
 
-        # Set up idle timer to check every 10 seconds
+        # Set up repeating idle timer to check every 10 seconds
         def check_idle():
+            global idle_timer
             if last_activity["value"] is None:
                 return
             import time
             if time.time() - last_activity["value"] > IDLE_TIMEOUT:
                 # Auto-lock: return to login
                 show_login_view()
+                return
+            # Reschedule timer for next check
+            idle_timer = threading.Timer(10, check_idle)
+            idle_timer.daemon = True
+            idle_timer.start()
 
         import threading
         idle_timer = threading.Timer(10, check_idle)
