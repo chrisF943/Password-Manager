@@ -167,7 +167,7 @@ def main(page: ft.Page):
                         error_message,
                         success_message,
                         ft.Container(height=10),
-                        ft.ElevatedButton(
+                        ft.Button(
                             content=ft.Row(
                                 [ft.Icon(ft.Icons.FOREST, size=20), ft.Text("Create Password")],
                                 spacing=10,
@@ -244,7 +244,7 @@ def main(page: ft.Page):
                         password_field,
                         error_message,
                         ft.Container(height=10),
-                        ft.ElevatedButton(
+                        ft.Button(
                             content=ft.Row(
                                 [ft.Icon(ft.Icons.FOREST, size=20), ft.Text("Unlock")],
                                 spacing=10,
@@ -488,12 +488,12 @@ def main(page: ft.Page):
                     ft.Container(height=15),
                     ft.Row(
                         [
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.ADD, size=18), ft.Text("Add")], spacing=5), on_click=on_add_click, height=40),
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.AUTO_AWESOME, size=18), ft.Text("Generate")], spacing=5), on_click=on_generate_click, height=40),
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.SEARCH, size=18), ft.Text("Search")], spacing=5), on_click=on_search_click, height=40),
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.EDIT, size=18), ft.Text("Update")], spacing=5), on_click=on_update_click, height=40),
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.DELETE, size=18), ft.Text("Delete")], spacing=5), on_click=on_delete_click, height=40, bgcolor=ft.Colors.RED_700),
-                            ft.ElevatedButton(content=ft.Row([ft.Icon(ft.Icons.DOWNLOAD, size=18), ft.Text("Export")], spacing=5), on_click=on_export_click, height=40),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.ADD, size=18), ft.Text("Add")], spacing=5), on_click=on_add_click, height=40),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.AUTO_AWESOME, size=18), ft.Text("Generate")], spacing=5), on_click=on_generate_click, height=40),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.SEARCH, size=18), ft.Text("Search")], spacing=5), on_click=on_search_click, height=40),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.EDIT, size=18), ft.Text("Update")], spacing=5), on_click=on_update_click, height=40),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.DELETE, size=18), ft.Text("Delete")], spacing=5), on_click=on_delete_click, height=40, bgcolor=ft.Colors.RED_700),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.DOWNLOAD, size=18), ft.Text("Export")], spacing=5), on_click=on_export_click, height=40),
                         ], spacing=10, wrap=True,
                     ),
                     ft.Container(height=15),
