@@ -33,6 +33,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
                     border_radius=5,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
                     padding=5,
+                    animate_opacity=300,
                 )
             )
         page.update()
@@ -104,23 +105,33 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
     def close_popup(e):
         main_dlg.open = False
 
+    # Wrapper container with slide-in animation
+    anim_container = ft.Container(
+        content=ft.Column([
+            ft.Text("Select an entry to delete:"),
+            ft.Container(
+                content=list_container,
+                height=250,
+                width=400,
+                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border_radius=5,
+            ),
+        ], tight=True),
+        width=450,
+        height=350,
+        opacity=0,
+        offset=ft.Offset(x=0, y=0.1),
+        animate_opacity=300,
+        animate_offset=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
+    )
+
+    def on_dialog_animation_end(e):
+        pass  # dialog shown
+
     # Create the main dialog
     main_dlg = ft.AlertDialog(
         title=ft.Text("Delete Password Entry"),
-        content=ft.Container(
-            content=ft.Column([
-                ft.Text("Select an entry to delete:"),
-                ft.Container(
-                    content=list_container,
-                    height=250,
-                    width=400,
-                    border=ft.border.all(1, ft.Colors.OUTLINE),
-                    border_radius=5,
-                ),
-            ], tight=True),
-            width=450,
-            height=350,
-        ),
+        content=anim_container,
         actions=[
             ft.TextButton(content=ft.Text("Delete"), on_click=delete_selected),
             ft.TextButton(content=ft.Text("Close"), on_click=close_popup),
@@ -129,6 +140,15 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
     )
 
     page.show_dialog(main_dlg)
+
+    # Trigger animations after the initial frame renders
+    import asyncio
+    async def _animate_in():
+        await asyncio.sleep(0.05)
+        anim_container.opacity = 1
+        anim_container.offset = ft.Offset(0, 0)
+        page.update()
+    page.run_task(_animate_in)
 
 
 def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
@@ -166,6 +186,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                     border_radius=5,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
                     padding=5,
+                    animate_opacity=300,
                 )
             )
         page.update()
@@ -270,6 +291,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                     notes_field,
                 ], tight=True),
                 width=350,
+                animate=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
             ),
             actions=[
                 ft.TextButton(content=ft.Text("Cancel"), on_click=lambda e: setattr(edit_dlg, 'open', False) or page.update()),
@@ -282,23 +304,30 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
     def close_popup(e):
         main_dlg.open = False
 
+    # Wrapper with slide-in animation
+    anim_container = ft.Container(
+        content=ft.Column([
+            ft.Text("Select an entry to edit:"),
+            ft.Container(
+                content=list_container,
+                height=250,
+                width=450,
+                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border_radius=5,
+            ),
+        ], tight=True),
+        width=500,
+        height=350,
+        opacity=0,
+        offset=ft.Offset(x=0, y=0.1),
+        animate_opacity=300,
+        animate_offset=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
+    )
+
     # Create the main dialog
     main_dlg = ft.AlertDialog(
         title=ft.Text("Update Password Entry"),
-        content=ft.Container(
-            content=ft.Column([
-                ft.Text("Select an entry to edit:"),
-                ft.Container(
-                    content=list_container,
-                    height=250,
-                    width=450,
-                    border=ft.border.all(1, ft.Colors.OUTLINE),
-                    border_radius=5,
-                ),
-            ], tight=True),
-            width=500,
-            height=350,
-        ),
+        content=anim_container,
         actions=[
             ft.TextButton(content=ft.Text("Edit Selected"), on_click=open_edit_dialog),
             ft.TextButton(content=ft.Text("Close"), on_click=close_popup),
@@ -307,6 +336,15 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
     )
 
     page.show_dialog(main_dlg)
+
+    # Trigger animations after the initial frame renders
+    import asyncio
+    async def _animate_in():
+        await asyncio.sleep(0.05)
+        anim_container.opacity = 1
+        anim_container.offset = ft.Offset(0, 0)
+        page.update()
+    page.run_task(_animate_in)
 
 
 def show_search_popup(page: ft.Page, cipher_suite):
@@ -372,6 +410,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
                     border_radius=5,
                     bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
                     padding=5,
+                    animate_opacity=300,
                 )
             )
         page.update()
@@ -417,23 +456,30 @@ def show_search_popup(page: ft.Page, cipher_suite):
     def close_popup(e):
         main_dlg.open = False
 
+    # Wrapper with slide-in animation
+    anim_container = ft.Container(
+        content=ft.Column([
+            search_row,
+            ft.Container(
+                content=list_container,
+                height=250,
+                width=450,
+                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border_radius=5,
+            ),
+        ], tight=True),
+        width=500,
+        height=380,
+        opacity=0,
+        offset=ft.Offset(x=0, y=0.1),
+        animate_opacity=300,
+        animate_offset=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
+    )
+
     # Create the main dialog
     main_dlg = ft.AlertDialog(
         title=ft.Text("Search Passwords"),
-        content=ft.Container(
-            content=ft.Column([
-                search_row,
-                ft.Container(
-                    content=list_container,
-                    height=250,
-                    width=450,
-                    border=ft.border.all(1, ft.Colors.OUTLINE),
-                    border_radius=5,
-                ),
-            ], tight=True),
-            width=500,
-            height=380,
-        ),
+        content=anim_container,
         actions=[
             ft.TextButton(content=ft.Text("Close"), on_click=close_popup),
         ],
@@ -441,6 +487,15 @@ def show_search_popup(page: ft.Page, cipher_suite):
     )
 
     page.show_dialog(main_dlg)
+
+    # Trigger animations after the initial frame renders
+    import asyncio
+    async def _animate_in():
+        await asyncio.sleep(0.05)
+        anim_container.opacity = 1
+        anim_container.offset = ft.Offset(0, 0)
+        page.update()
+    page.run_task(_animate_in)
 
 
 def show_settings_popup(page: ft.Page, master_password_session: dict, current_cipher, on_update_callback):
@@ -616,26 +671,33 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
         settings_dlg.open = False
         page.update()
 
+    # Wrapper with slide-in animation
+    anim_container = ft.Container(
+        content=ft.Column([
+            ft.Text("Change Master Password", size=16, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
+            ft.Container(height=10),
+            current_password_field,
+            ft.Container(height=8),
+            new_password_field,
+            strength_bar,
+            ft.Container(height=8),
+            confirm_password_field,
+            ft.Container(height=5),
+            status_text,
+        ], tight=True),
+        width=400,
+        opacity=0,
+        offset=ft.Offset(x=0, y=0.1),
+        animate_opacity=300,
+        animate_offset=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
+    )
+
     settings_dlg = ft.AlertDialog(
         title=ft.Text("Settings"),
-        content=ft.Container(
-            content=ft.Column([
-                ft.Text("Change Master Password", size=16, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
-                ft.Container(height=10),
-                current_password_field,
-                ft.Container(height=8),
-                new_password_field,
-                strength_bar,
-                ft.Container(height=8),
-                confirm_password_field,
-                ft.Container(height=5),
-                status_text,
-            ], tight=True),
-            width=400,
-        ),
+        content=anim_container,
         actions=[
             ft.TextButton(content=ft.Text("Cancel"), on_click=close_popup),
-            ft.ElevatedButton(
+            ft.Button(
                 content=ft.Row([ft.Icon(ft.Icons.CHECK, size=16), ft.Text("Change Password")], spacing=5),
                 on_click=change_password,
                 height=38,
@@ -645,3 +707,12 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
     )
 
     page.show_dialog(settings_dlg)
+
+    # Trigger animations after the initial frame renders
+    import asyncio
+    async def _animate_in():
+        await asyncio.sleep(0.05)
+        anim_container.opacity = 1
+        anim_container.offset = ft.Offset(0, 0)
+        page.update()
+    page.run_task(_animate_in)

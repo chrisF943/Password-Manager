@@ -20,6 +20,47 @@ from src.gui.popups import show_delete_popup, show_update_popup, show_search_pop
 # Module-level idle timer tracking
 idle_timer = None  # Track idle timer to prevent leaks
 
+# Page transition overlay
+def _fade_transition(page: ft.Page, target_view_fn):
+    """Fade to dark → switch view → fade in using on_animation_end chaining."""
+    import asyncio
+
+    def on_fade_in_done(e):
+        """Overlay is now fully opaque — switch the view underneath."""
+        if e.data != "opacity":
+            return
+        target_view_fn()
+        # Now fade the overlay back out
+        overlay.on_animation_end = on_fade_out_done
+        overlay.opacity = 0
+        page.update()
+
+    def on_fade_out_done(e):
+        """Overlay is now fully transparent — remove it."""
+        if e.data != "opacity":
+            return
+        if overlay in page.overlay:
+            page.overlay.remove(overlay)
+            page.update()
+
+    overlay = ft.Container(
+        left=0, top=0, right=0, bottom=0,
+        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        opacity=0,
+        animate_opacity=300,
+        on_animation_end=on_fade_in_done,
+    )
+    page.overlay.append(overlay)
+    page.update()
+
+    # Kick off fade-in after the initial opacity=0 frame renders
+    async def start_fade():
+        await asyncio.sleep(0.05)
+        overlay.opacity = 1
+        page.update()
+
+    page.run_task(start_fade)
+
 
 def is_master_password_set() -> bool:
     """Check if master password has been set (KEY exists in .env)."""
@@ -221,7 +262,7 @@ def main(page: ft.Page):
                 master_password_session["value"] = password
                 password_field.value = ""
                 error_message.visible = False
-                show_main_view()
+                _fade_transition(page, show_main_view)
             else:
                 error_message.value = "Incorrect password"
                 error_message.visible = True
