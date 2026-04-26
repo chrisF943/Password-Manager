@@ -1,6 +1,7 @@
 """
 Main application entry point with single-window login/main view switching.
 """
+import asyncio
 import flet as ft
 from src.database import init_db
 from src.security.auth import verify_master_password, hash_master_password
@@ -21,10 +22,9 @@ from src.gui.popups import show_delete_popup, show_update_popup, show_search_pop
 idle_timer = None  # Track idle timer to prevent leaks
 
 # Page transition overlay
-def _fade_transition(page: ft.Page, target_view_fn):
-    """Fade to dark → switch view → fade in using on_animation_end chaining."""
-    import asyncio
-
+def _fade_transition(page: ft.Page, target_view_fn, on_transition_done=None):
+    """Fade to dark → switch view → fade in using on_animation_end chaining.
+    Optionally calls on_transition_done after the overlay is removed."""
     def on_fade_in_done(e):
         """Overlay is now fully opaque — switch the view underneath."""
         if e.data != "opacity":
@@ -42,6 +42,8 @@ def _fade_transition(page: ft.Page, target_view_fn):
         if overlay in page.overlay:
             page.overlay.remove(overlay)
             page.update()
+        if on_transition_done:
+            on_transition_done()
 
     overlay = ft.Container(
         left=0, top=0, right=0, bottom=0,
@@ -289,17 +291,13 @@ def main(page: ft.Page):
                     [
                         fern_icon,
                         ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
-                        ft.Text("Enter your master password", size=14, color=ft.Colors.WHITE54),
+                        ft.Text("Please login", size=14, color=ft.Colors.WHITE54),
                         ft.Container(height=20),
                         password_field,
                         error_message,
                         ft.Container(height=10),
                         ft.Button(
-                            content=ft.Row(
-                                [ft.Icon(ft.Icons.FOREST, size=20), ft.Text("Unlock")],
-                                spacing=10,
-                                alignment=ft.MainAxisAlignment.CENTER,
-                            ),
+                            content=ft.Text("Unlock"),
                             width=200,
                             height=45,
                             on_click=on_login_click,
@@ -320,7 +318,7 @@ def main(page: ft.Page):
         global idle_timer
         is_logged_in["value"] = True
 
-        # Cancel any existing timer before creating a new one
+        # Cancel any existing interval when showing main view
         if idle_timer is not None:
             idle_timer.cancel()
             idle_timer = None
@@ -328,25 +326,45 @@ def main(page: ft.Page):
         # Record initial activity
         record_activity()
 
-        # Set up repeating idle timer to check every 10 seconds
-        def check_idle():
-            global idle_timer
-            if last_activity["value"] is None:
-                return
-            import time
-            if time.time() - last_activity["value"] > IDLE_TIMEOUT:
-                # Auto-lock: return to login
-                show_login_view()
-                return
-            # Reschedule timer for next check
-            idle_timer = threading.Timer(10, check_idle)
-            idle_timer.daemon = True
-            idle_timer.start()
+        # Set up idle check using page.run_task (fires on UI thread, no threading issues)
+        async def check_idle_task():
+            while True:
+                await asyncio.sleep(10)
+                if last_activity["value"] is None:
+                    continue
+                import time
+                if time.time() - last_activity["value"] > IDLE_TIMEOUT:
+                    # Auto-lock: return to login with fade transition, then show message
+                    def on_lock_transition_done():
+                        dlg = ft.AlertDialog(
+                            modal=True,
+                            content=ft.Column(
+                                [
+                                    ft.Icon(ft.Icons.TIMER, size=48, color=ft.Colors.BLUE_400),
+                                    ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                                    ft.Text("You have been logged out due to inactivity.", size=14, color=ft.Colors.WHITE70),
+                                ],
+                                tight=True,
+                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                spacing=10,
+                            ),
+                            actions=[
+                                ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_dlg()),
+                            ],
+                            actions_alignment=ft.MainAxisAlignment.END,
+                        )
+                        
+                        def close_dlg():
+                            dlg.open = False
+                            page.update()
 
-        import threading
-        idle_timer = threading.Timer(10, check_idle)
-        idle_timer.daemon = True
-        idle_timer.start()
+                        page.show_dialog(dlg)
+                        page.update()
+
+                    _fade_transition(page, show_login_view, on_transition_done=on_lock_transition_done)
+                    return
+
+        idle_timer = page.run_task(check_idle_task)
 
         # Check for migration needed
         if needs_migration():
@@ -505,6 +523,37 @@ def main(page: ft.Page):
             record_activity()
             show_settings_popup(page, master_password_session, cipher_suite, update_count)
 
+        def on_logout_click(e):
+            record_activity()
+
+            def on_logout_transition_done():
+                dlg = ft.AlertDialog(
+                    modal=True,
+                    content=ft.Column(
+                        [
+                            ft.Icon(ft.Icons.LOGOUT, size=48, color=ft.Colors.BLUE_400),
+                            ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                            ft.Text("You have been logged out.", size=14, color=ft.Colors.WHITE70),
+                        ],
+                        tight=True,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=10,
+                    ),
+                    actions=[
+                        ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_dlg()),
+                    ],
+                    actions_alignment=ft.MainAxisAlignment.END,
+                )
+
+                def close_dlg():
+                    dlg.open = False
+                    page.update()
+
+                page.show_dialog(dlg)
+                page.update()
+
+            _fade_transition(page, show_login_view, on_transition_done=on_logout_transition_done)
+
         # Header
         header = ft.Container(
             content=ft.Row(
@@ -517,6 +566,12 @@ def main(page: ft.Page):
                         icon_color=ft.Colors.WHITE70,
                         on_click=on_settings_click,
                         tooltip="Settings",
+                    ),
+                    ft.IconButton(
+                        icon=ft.Icons.LOGOUT,
+                        icon_color=ft.Colors.WHITE70,
+                        on_click=on_logout_click,
+                        tooltip="Logout",
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.START, spacing=15,
