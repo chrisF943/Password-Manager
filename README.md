@@ -10,7 +10,8 @@ Welcome to **fern**, a password manager built with Flet (Flutter), SQLAlchemy an
 - **Authentication**: Application access protected by master password (stored as SHA-256 hash)
 - **Local Storage**: Data stored locally in SQLite database, not in the cloud
 - **Salt Management**: Unique salt generated per installation, stored alongside database
-- **Auto-Lock**: App automatically locks after 3 minutes of inactivity
+- **Auto-Lock**: App automatically locks after 3 minutes of inactivity, with smooth fade transition back to login and a "logged out" popup
+- **Logout Button**: Manually lock the app at any time with the logout button in the header
 
 ### Password Management
 
