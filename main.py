@@ -76,6 +76,15 @@ def main(page: ft.Page):
     page.window.height = 750
     page.window.resizable = True
 
+    # Custom fonts
+    page.fonts = {
+        "Ubuntu": "https://raw.githubusercontent.com/google/fonts/main/ufl/ubuntu/Ubuntu-Bold.ttf",
+        "DM Sans": "https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf",
+    }
+    # DM Sans as the default font for all text in the app
+    page.theme = ft.Theme(font_family="DM Sans")
+    page.dark_theme = ft.Theme(font_family="DM Sans")
+
     # Track login state and master password
     is_logged_in = {"value": False}
     master_password_session = {"value": ""}
@@ -198,7 +207,7 @@ def main(page: ft.Page):
                 content=ft.Column(
                     [
                         fern_icon,
-                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
                         ft.Text("First-time setup", size=14, color=ft.Colors.WHITE54),
                         ft.Container(height=20),
                         password_field,
@@ -279,7 +288,7 @@ def main(page: ft.Page):
                 content=ft.Column(
                     [
                         fern_icon,
-                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
                         ft.Text("Enter your master password", size=14, color=ft.Colors.WHITE54),
                         ft.Container(height=20),
                         password_field,
@@ -501,7 +510,7 @@ def main(page: ft.Page):
             content=ft.Row(
                 [
                     ft.Icon(ft.Icons.FOREST, size=40, color=ft.Colors.BLUE_400),
-                    ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
                     ft.Container(expand=True),
                     ft.IconButton(
                         icon=ft.Icons.SETTINGS,
@@ -543,12 +552,18 @@ def main(page: ft.Page):
             ), padding=25, border_radius=10, bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         )
 
-        # Info section
+        # Info section (Sticky Footer)
         info_section = ft.Container(
             content=ft.Row(
-                [ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE54),
-                 ft.Text("Passwords are encrypted using Fernet (AES) symmetric encryption.", size=12, color=ft.Colors.WHITE54)],
-                spacing=10,
+                [
+                    count_text,
+                    ft.Row(
+                        [ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE54),
+                         ft.Text("Passwords are encrypted using Fernet (AES) symmetric encryption.", size=12, color=ft.Colors.WHITE54)],
+                        spacing=10,
+                    )
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ), padding=15,
         )
 
@@ -564,10 +579,10 @@ def main(page: ft.Page):
         page.controls.clear()
         page.add(
             ft.Column(
-                [header, ft.Container(height=10), form_card, ft.Container(height=10), count_text,
-                 ft.Container(expand=True), info_section],
-                spacing=0, scroll=ft.ScrollMode.AUTO,
-            )
+                [header, ft.Container(height=10), form_card],
+                spacing=0, scroll=ft.ScrollMode.AUTO, expand=True
+            ),
+            info_section
         )
 
     # Start with setup view if first time, otherwise login
