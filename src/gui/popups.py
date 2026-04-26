@@ -3,6 +3,7 @@ import pyperclip
 from src.database.repository import get_all_passwords, delete_password, update_password
 from src.security.encryption import decrypt_password, encrypt_password
 from src.security.auth import hash_master_password
+from src.gui.theme import DARK_BG, SURFACE, ACCENT, ACCENT_LIGHT, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_HINT, ERROR, WARNING, SUCCESS
 
 
 def show_delete_popup(page: ft.Page, on_delete_callback):
@@ -31,7 +32,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
                         on_click=lambda e, site=entry.site: select_entry(site),
                     ),
                     border_radius=5,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+                    bgcolor=SURFACE,
                     padding=5,
                     animate_opacity=300,
                 )
@@ -45,9 +46,9 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
             if isinstance(ctrl, ft.Container):
                 tile = ctrl.content
                 if tile.title.value == site:
-                    ctrl.bgcolor = ft.Colors.PRIMARY_CONTAINER
+                    ctrl.bgcolor = ACCENT
                 else:
-                    ctrl.bgcolor = ft.Colors.SURFACE_CONTAINER_LOW
+                    ctrl.bgcolor = SURFACE
         page.update()
 
     # Load initial data
@@ -58,7 +59,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
             main_dlg.open = False
             page.update()
             # Show warning dialog instead of snackbar
-            warning_dlg = ft.AlertDialog(
+            warning_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Warning"),
                 content=ft.Text("Please select an entry to delete."),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_warning(warning_dlg))],
@@ -81,7 +82,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
             main_dlg.open = False
             page.update()
             # Show success dialog
-            success_dlg = ft.AlertDialog(
+            success_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Deleted"),
                 content=ft.Text(f"Entry for '{site}' deleted."),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_success(success_dlg))],
@@ -91,7 +92,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
                 page.update()
             page.show_dialog(success_dlg)
 
-        confirm_dlg = ft.AlertDialog(
+        confirm_dlg = ft.AlertDialog(bgcolor=SURFACE,
             title=ft.Text("Confirm Delete"),
             content=ft.Text(f"Are you sure you want to delete '{site}'?"),
             actions=[
@@ -113,7 +114,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
                 content=list_container,
                 height=250,
                 width=400,
-                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border=ft.border.all(1, TEXT_SECONDARY),
                 border_radius=5,
             ),
         ], tight=True),
@@ -129,7 +130,7 @@ def show_delete_popup(page: ft.Page, on_delete_callback):
         pass  # dialog shown
 
     # Create the main dialog
-    main_dlg = ft.AlertDialog(
+    main_dlg = ft.AlertDialog(bgcolor=SURFACE,
         title=ft.Text("Delete Password Entry"),
         content=anim_container,
         actions=[
@@ -184,7 +185,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                         on_click=lambda e, site=entry.site: select_entry(site),
                     ),
                     border_radius=5,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+                    bgcolor=SURFACE,
                     padding=5,
                     animate_opacity=300,
                 )
@@ -198,9 +199,9 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
             if isinstance(ctrl, ft.Container):
                 tile = ctrl.content
                 if tile.title.value == site:
-                    ctrl.bgcolor = ft.Colors.PRIMARY_CONTAINER
+                    ctrl.bgcolor = ACCENT
                 else:
-                    ctrl.bgcolor = ft.Colors.SURFACE_CONTAINER_LOW
+                    ctrl.bgcolor = SURFACE
         page.update()
 
     # Load initial data
@@ -211,7 +212,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
             main_dlg.open = False
             page.update()
             # Show warning dialog instead of snackbar
-            warning_dlg = ft.AlertDialog(
+            warning_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Warning"),
                 content=ft.Text("Please select an entry to edit."),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_warning(warning_dlg))],
@@ -252,7 +253,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
 
             if not new_username or not new_password:
                 # Show error dialog
-                error_dlg = ft.AlertDialog(
+                error_dlg = ft.AlertDialog(bgcolor=SURFACE,
                     title=ft.Text("Error"),
                     content=ft.Text("All fields are required."),
                     actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_error(error_dlg))],
@@ -271,7 +272,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
             main_dlg.open = False
             page.update()
             # Show success dialog
-            success_dlg = ft.AlertDialog(
+            success_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Success"),
                 content=ft.Text("Entry updated successfully."),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_success(success_dlg))],
@@ -281,7 +282,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                 page.update()
             page.show_dialog(success_dlg)
 
-        edit_dlg = ft.AlertDialog(
+        edit_dlg = ft.AlertDialog(bgcolor=SURFACE,
             title=ft.Text(f"Edit: {site}"),
             content=ft.Container(
                 content=ft.Column([
@@ -312,7 +313,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
                 content=list_container,
                 height=250,
                 width=450,
-                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border=ft.border.all(1, TEXT_SECONDARY),
                 border_radius=5,
             ),
         ], tight=True),
@@ -325,7 +326,7 @@ def show_update_popup(page: ft.Page, cipher_suite, on_update_callback):
     )
 
     # Create the main dialog
-    main_dlg = ft.AlertDialog(
+    main_dlg = ft.AlertDialog(bgcolor=SURFACE,
         title=ft.Text("Update Password Entry"),
         content=anim_container,
         actions=[
@@ -408,7 +409,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
                         on_click=lambda e, site=entry.site, pwd=decrypted: copy_password(site, pwd),
                     ),
                     border_radius=5,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+                    bgcolor=SURFACE,
                     padding=5,
                     animate_opacity=300,
                 )
@@ -431,7 +432,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
             main_dlg.open = False
             page.update()
             # Show confirmation dialog
-            confirm_dlg = ft.AlertDialog(
+            confirm_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Copied!"),
                 content=ft.Text(f"Password for '{site}' copied to clipboard."),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_confirm(confirm_dlg))],
@@ -443,7 +444,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
         except Exception as ex:
             main_dlg.open = False
             page.update()
-            error_dlg = ft.AlertDialog(
+            error_dlg = ft.AlertDialog(bgcolor=SURFACE,
                 title=ft.Text("Error"),
                 content=ft.Text(f"Failed to copy: {ex}"),
                 actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_error(error_dlg))],
@@ -464,7 +465,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
                 content=list_container,
                 height=250,
                 width=450,
-                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border=ft.border.all(1, TEXT_SECONDARY),
                 border_radius=5,
             ),
         ], tight=True),
@@ -477,7 +478,7 @@ def show_search_popup(page: ft.Page, cipher_suite):
     )
 
     # Create the main dialog
-    main_dlg = ft.AlertDialog(
+    main_dlg = ft.AlertDialog(bgcolor=SURFACE,
         title=ft.Text("Search Passwords"),
         content=anim_container,
         actions=[
@@ -529,9 +530,9 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
             ft.Container(
                 width=100,
                 height=6,
-                bgcolor=ft.Colors.GREY_800,
+                bgcolor=SURFACE,
                 border_radius=3,
-                content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+                content=ft.Container(width=0, bgcolor=ACCENT_LIGHT, border_radius=3),
             ),
             strength_text := ft.Text("", size=12),
         ], spacing=10),
@@ -555,7 +556,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
 
     new_password_field.on_change = on_new_password_change
 
-    status_text = ft.Text("", size=13, color=ft.Colors.RED_400, visible=False)
+    status_text = ft.Text("", size=13, color=ERROR, visible=False)
 
     def change_password(e):
         status_text.visible = True
@@ -573,14 +574,14 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
         # Validate new passwords match
         if new_pw != confirm_pw:
             status_text.value = "New passwords do not match."
-            status_text.color = ft.Colors.RED_400
+            status_text.color = ERROR
             page.update()
             return
 
         # Validate new password is not empty
         if not new_pw:
             status_text.value = "New password cannot be empty."
-            status_text.color = ft.Colors.RED_400
+            status_text.color = ERROR
             page.update()
             return
 
@@ -589,7 +590,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
         strength = check_password_strength(new_pw)
         if strength["score"] < 0.3:
             status_text.value = "New password is too weak. Use a stronger password."
-            status_text.color = ft.Colors.RED_400
+            status_text.color = ERROR
             page.update()
             return
 
@@ -616,7 +617,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
 
         if errors > 0:
             status_text.value = f"Failed to re-encrypt {errors} entries. Password NOT changed."
-            status_text.color = ft.Colors.RED_400
+            status_text.color = ERROR
             page.update()
             return
 
@@ -657,7 +658,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
         settings_dlg.open = False
         page.update()
 
-        success_dlg = ft.AlertDialog(
+        success_dlg = ft.AlertDialog(bgcolor=SURFACE,
             title=ft.Text("Success"),
             content=ft.Text(f"Master password changed. {success} passwords re-encrypted."),
             actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_success(success_dlg))],
@@ -674,7 +675,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
     # Wrapper with slide-in animation
     anim_container = ft.Container(
         content=ft.Column([
-            ft.Text("Change Master Password", size=16, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
+            ft.Text("Change Master Password", size=16, weight=ft.FontWeight.W_500, color=TEXT_PRIMARY),
             ft.Container(height=10),
             current_password_field,
             ft.Container(height=8),
@@ -692,7 +693,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
         animate_offset=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_OUT),
     )
 
-    settings_dlg = ft.AlertDialog(
+    settings_dlg = ft.AlertDialog(bgcolor=SURFACE,
         title=ft.Text("Settings"),
         content=anim_container,
         actions=[

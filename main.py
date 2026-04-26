@@ -17,6 +17,7 @@ from src.paths import ENV_FILE
 from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
 from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup, show_settings_popup
+from src.gui.theme import DARK_BG, SURFACE, ACCENT, ACCENT_LIGHT, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_HINT, ERROR, SUCCESS, WARNING
 
 # Module-level idle timer tracking
 idle_timer = None  # Track idle timer to prevent leaks
@@ -47,7 +48,7 @@ def _fade_transition(page: ft.Page, target_view_fn, on_transition_done=None):
 
     overlay = ft.Container(
         left=0, top=0, right=0, bottom=0,
-        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        bgcolor=DARK_BG,
         opacity=0,
         animate_opacity=300,
         on_animation_end=on_fade_in_done,
@@ -83,9 +84,18 @@ def main(page: ft.Page):
         "Ubuntu": "https://raw.githubusercontent.com/google/fonts/main/ufl/ubuntu/Ubuntu-Bold.ttf",
         "DM Sans": "https://raw.githubusercontent.com/google/fonts/main/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf",
     }
-    # DM Sans as the default font for all text in the app
-    page.theme = ft.Theme(font_family="DM Sans")
-    page.dark_theme = ft.Theme(font_family="DM Sans")
+    # Custom color scheme
+    custom_color_scheme = ft.ColorScheme(
+        surface=SURFACE,
+        primary=ACCENT,
+        secondary=ACCENT_LIGHT,
+        error=ERROR,
+    )
+    
+    # DM Sans as the default font and apply custom theme colors
+    page.theme = ft.Theme(font_family="DM Sans", color_scheme=custom_color_scheme)
+    page.dark_theme = ft.Theme(font_family="DM Sans", color_scheme=custom_color_scheme)
+    page.bgcolor = DARK_BG
 
     # Track login state and master password
     is_logged_in = {"value": False}
@@ -110,8 +120,8 @@ def main(page: ft.Page):
             idle_timer.cancel()
             idle_timer = None
 
-        error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
-        success_message = ft.Text("", color=ft.Colors.GREEN_400, visible=False)
+        error_message = ft.Text("", color=ERROR, visible=False)
+        success_message = ft.Text("", color=SUCCESS, visible=False)
 
         password_field = ft.TextField(
             label="Create Master Password",
@@ -131,9 +141,9 @@ def main(page: ft.Page):
                 ft.Container(
                     width=100,
                     height=6,
-                    bgcolor=ft.Colors.GREY_800,
+                    bgcolor=SURFACE,
                     border_radius=3,
-                    content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+                    content=ft.Container(width=0, bgcolor=ACCENT_LIGHT, border_radius=3),
                 ),
                 strength_text := ft.Text("", size=12),
             ], spacing=10),
@@ -201,7 +211,7 @@ def main(page: ft.Page):
 
         confirm_field.on_submit = on_setup_click
 
-        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ft.Colors.BLUE_400)
+        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ACCENT)
 
         page.controls.clear()
         page.add(
@@ -209,8 +219,8 @@ def main(page: ft.Page):
                 content=ft.Column(
                     [
                         fern_icon,
-                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
-                        ft.Text("First-time setup", size=14, color=ft.Colors.WHITE54),
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY, font_family="Ubuntu"),
+                        ft.Text("First-time setup", size=14, color=TEXT_HINT),
                         ft.Container(height=20),
                         password_field,
                         strength_bar,
@@ -252,7 +262,7 @@ def main(page: ft.Page):
             idle_timer.cancel()
             idle_timer = None
 
-        error_message = ft.Text("", color=ft.Colors.ERROR, visible=False)
+        error_message = ft.Text("", color=ERROR, visible=False)
         password_field = ft.TextField(
             label="Master Password",
             password=True,
@@ -282,7 +292,7 @@ def main(page: ft.Page):
 
         password_field.on_submit = on_login_click
 
-        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ft.Colors.BLUE_400)
+        fern_icon = ft.Icon(ft.Icons.FOREST, size=80, color=ACCENT)
 
         page.controls.clear()
         page.add(
@@ -290,8 +300,8 @@ def main(page: ft.Page):
                 content=ft.Column(
                     [
                         fern_icon,
-                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
-                        ft.Text("Please login", size=14, color=ft.Colors.WHITE54),
+                        ft.Text("fern", size=28, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY, font_family="Ubuntu"),
+                        ft.Text("Please login", size=14, color=TEXT_HINT),
                         ft.Container(height=20),
                         password_field,
                         error_message,
@@ -336,13 +346,13 @@ def main(page: ft.Page):
                 if time.time() - last_activity["value"] > IDLE_TIMEOUT:
                     # Auto-lock: return to login with fade transition, then show message
                     def on_lock_transition_done():
-                        dlg = ft.AlertDialog(
+                        dlg = ft.AlertDialog(bgcolor=SURFACE,
                             modal=True,
                             content=ft.Column(
                                 [
-                                    ft.Icon(ft.Icons.TIMER, size=48, color=ft.Colors.BLUE_400),
-                                    ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                                    ft.Text("You have been logged out due to inactivity.", size=14, color=ft.Colors.WHITE70),
+                                    ft.Icon(ft.Icons.TIMER, size=48, color=ACCENT),
+                                    ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
+                                    ft.Text("You have been logged out due to inactivity.", size=14, color=TEXT_SECONDARY),
                                 ],
                                 tight=True,
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -379,7 +389,7 @@ def main(page: ft.Page):
         cipher_suite = get_cipher_suite(master_password_session["value"])
 
         # Status message
-        status_text = ft.Text("", size=14, color=ft.Colors.GREEN_400)
+        status_text = ft.Text("", size=14, color=SUCCESS)
 
         # Password strength indicator
         strength_bar = ft.Container(
@@ -387,9 +397,9 @@ def main(page: ft.Page):
                 ft.Container(
                     width=100,
                     height=6,
-                    bgcolor=ft.Colors.GREY_800,
+                    bgcolor=SURFACE,
                     border_radius=3,
-                    content=ft.Container(width=0, bgcolor=ft.Colors.GREY_600, border_radius=3),
+                    content=ft.Container(width=0, bgcolor=ACCENT_LIGHT, border_radius=3),
                 ),
                 strength_text := ft.Text("", size=12),
             ], spacing=10),
@@ -425,7 +435,7 @@ def main(page: ft.Page):
         )
 
         # Password count display
-        count_text = ft.Text("", size=14, color=ft.Colors.WHITE70)
+        count_text = ft.Text("", size=14, color=TEXT_SECONDARY)
 
         def update_count():
             count = get_entry_count()
@@ -441,14 +451,14 @@ def main(page: ft.Page):
 
             if not site or not username or not password:
                 status_text.value = "Please fill in all fields"
-                status_text.color = ft.Colors.RED_400
+                status_text.color = ERROR
                 page.update()
                 return
 
             existing = get_password(site)
             if existing:
                 status_text.value = f"Entry for '{site}' already exists. Use Update to modify."
-                status_text.color = ft.Colors.ORANGE_400
+                status_text.color = WARNING
                 page.update()
                 return
 
@@ -461,7 +471,7 @@ def main(page: ft.Page):
             notes_field.value = ""
             strength_bar.visible = False
             status_text.value = f"Password for '{site}' added successfully!"
-            status_text.color = ft.Colors.GREEN_400
+            status_text.color = SUCCESS
             update_count()
             page.update()
 
@@ -471,7 +481,7 @@ def main(page: ft.Page):
             password_field.value = generated
             on_password_change(None)
             status_text.value = "Password generated!"
-            status_text.color = ft.Colors.BLUE_400
+            status_text.color = ACCENT
             page.update()
 
         def on_search_click(e):
@@ -491,14 +501,21 @@ def main(page: ft.Page):
             import csv
             import os
             from src.paths import EXPORT_DIR
-            try:
-                entries = get_all_passwords()
-                if not entries:
-                    status_text.value = "No passwords to export"
-                    status_text.color = ft.Colors.ORANGE_400
+            entries = get_all_passwords()
+            if not entries:
+                warn_dlg = ft.AlertDialog(bgcolor=SURFACE,
+                    title=ft.Text("Nothing to Export"),
+                    content=ft.Text("Please save some passwords before exporting"),
+                    actions=[ft.TextButton(content=ft.Text("OK"), on_click=lambda e: close_warn(warn_dlg))],
+                )
+                def close_warn(dlg):
+                    dlg.open = False
                     page.update()
-                    return
+                page.show_dialog(warn_dlg)
+                page.update()
+                return
 
+            try:
                 export_path = os.path.join(EXPORT_DIR, "passwords_export.csv")
 
                 with open(export_path, 'w', newline='', encoding='utf-8') as f:
@@ -512,11 +529,11 @@ def main(page: ft.Page):
                         writer.writerow([entry.site, entry.user, decrypted, entry.notes or ""])
 
                 status_text.value = f"Exported {len(entries)} passwords to passwords_export.csv"
-                status_text.color = ft.Colors.GREEN_400
+                status_text.color = SUCCESS
                 page.update()
             except Exception as ex:
                 status_text.value = f"Export failed: {ex}"
-                status_text.color = ft.Colors.RED_400
+                status_text.color = ERROR
                 page.update()
 
         def on_settings_click(e):
@@ -527,13 +544,13 @@ def main(page: ft.Page):
             record_activity()
 
             def on_logout_transition_done():
-                dlg = ft.AlertDialog(
+                dlg = ft.AlertDialog(bgcolor=SURFACE,
                     modal=True,
                     content=ft.Column(
                         [
-                            ft.Icon(ft.Icons.LOGOUT, size=48, color=ft.Colors.BLUE_400),
-                            ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                            ft.Text("You have been logged out.", size=14, color=ft.Colors.WHITE70),
+                            ft.Icon(ft.Icons.LOGOUT, size=48, color=ACCENT),
+                            ft.Text("Logged Out", size=20, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY),
+                            ft.Text("You have been logged out.", size=14, color=TEXT_SECONDARY),
                         ],
                         tight=True,
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -558,18 +575,18 @@ def main(page: ft.Page):
         header = ft.Container(
             content=ft.Row(
                 [
-                    ft.Icon(ft.Icons.FOREST, size=40, color=ft.Colors.BLUE_400),
-                    ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, font_family="Ubuntu"),
+                    ft.Icon(ft.Icons.FOREST, size=40, color=ACCENT),
+                    ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY, font_family="Ubuntu"),
                     ft.Container(expand=True),
                     ft.IconButton(
                         icon=ft.Icons.SETTINGS,
-                        icon_color=ft.Colors.WHITE70,
+                        icon_color=TEXT_SECONDARY,
                         on_click=on_settings_click,
                         tooltip="Settings",
                     ),
                     ft.IconButton(
                         icon=ft.Icons.LOGOUT,
-                        icon_color=ft.Colors.WHITE70,
+                        icon_color=TEXT_SECONDARY,
                         on_click=on_logout_click,
                         tooltip="Logout",
                     ),
@@ -582,7 +599,7 @@ def main(page: ft.Page):
         form_card = ft.Container(
             content=ft.Column(
                 [
-                    ft.Text("Add New Password", size=20, weight=ft.FontWeight.W_500, color=ft.Colors.WHITE),
+                    ft.Text("Add New Password", size=20, weight=ft.FontWeight.W_500, color=TEXT_PRIMARY),
                     ft.Container(height=15),
                     ft.Row([site_field, username_field], spacing=15, expand=True),
                     ft.Container(height=10),
@@ -597,14 +614,14 @@ def main(page: ft.Page):
                             ft.Button(content=ft.Row([ft.Icon(ft.Icons.AUTO_AWESOME, size=18), ft.Text("Generate")], spacing=5), on_click=on_generate_click, height=40),
                             ft.Button(content=ft.Row([ft.Icon(ft.Icons.SEARCH, size=18), ft.Text("Search")], spacing=5), on_click=on_search_click, height=40),
                             ft.Button(content=ft.Row([ft.Icon(ft.Icons.EDIT, size=18), ft.Text("Update")], spacing=5), on_click=on_update_click, height=40),
-                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.DELETE, size=18), ft.Text("Delete")], spacing=5), on_click=on_delete_click, height=40, bgcolor=ft.Colors.RED_700),
+                            ft.Button(content=ft.Row([ft.Icon(ft.Icons.DELETE, size=18, color=ERROR), ft.Text("Delete", color=ERROR)], spacing=5), on_click=on_delete_click, height=40),
                             ft.Button(content=ft.Row([ft.Icon(ft.Icons.DOWNLOAD, size=18), ft.Text("Export")], spacing=5), on_click=on_export_click, height=40),
                         ], spacing=10, wrap=True,
                     ),
                     ft.Container(height=15),
                     status_text,
                 ], spacing=0,
-            ), padding=25, border_radius=10, bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+            ), padding=25, border_radius=10, bgcolor=SURFACE,
         )
 
         # Info section (Sticky Footer)
@@ -613,8 +630,8 @@ def main(page: ft.Page):
                 [
                     count_text,
                     ft.Row(
-                        [ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE54),
-                         ft.Text("Passwords are encrypted using Fernet (AES) symmetric encryption.", size=12, color=ft.Colors.WHITE54)],
+                        [ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=TEXT_HINT),
+                         ft.Text("Passwords are encrypted using Fernet (AES) symmetric encryption.", size=12, color=TEXT_HINT)],
                         spacing=10,
                     )
                 ],
