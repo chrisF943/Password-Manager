@@ -5,10 +5,14 @@ from src.database.models import Passwords
 def add_password(site: str, username: str, encrypted_password: str, notes: str = None) -> Passwords:
     """Add a new password entry to the database."""
     with app.app_context():
-        new_entry = Passwords(site=site, user=username, password=encrypted_password, notes=notes)
-        db.session.add(new_entry)
-        db.session.commit()
-        return new_entry
+        try:
+            new_entry = Passwords(site=site, user=username, password=encrypted_password, notes=notes)
+            db.session.add(new_entry)
+            db.session.commit()
+            return new_entry
+        except Exception:
+            db.session.rollback()
+            raise
 
 
 def get_password(site: str) -> Passwords | None:
@@ -26,27 +30,35 @@ def get_all_passwords() -> list[Passwords]:
 def update_password(site: str, new_encrypted_password: str, new_username: str = None, new_notes: str = None) -> bool:
     """Update an existing password entry. Returns True if successful."""
     with app.app_context():
-        entry = Passwords.query.filter_by(site=site).first()
-        if entry:
-            entry.password = new_encrypted_password
-            if new_username is not None:
-                entry.user = new_username
-            if new_notes is not None:
-                entry.notes = new_notes
-            db.session.commit()
-            return True
-        return False
+        try:
+            entry = Passwords.query.filter_by(site=site).first()
+            if entry:
+                entry.password = new_encrypted_password
+                if new_username is not None:
+                    entry.user = new_username
+                if new_notes is not None:
+                    entry.notes = new_notes
+                db.session.commit()
+                return True
+            return False
+        except Exception:
+            db.session.rollback()
+            raise
 
 
 def delete_password(site: str) -> bool:
     """Delete a password entry. Returns True if successful."""
     with app.app_context():
-        entry = Passwords.query.filter_by(site=site).first()
-        if entry:
-            db.session.delete(entry)
-            db.session.commit()
-            return True
-        return False
+        try:
+            entry = Passwords.query.filter_by(site=site).first()
+            if entry:
+                db.session.delete(entry)
+                db.session.commit()
+                return True
+            return False
+        except Exception:
+            db.session.rollback()
+            raise
 
 
 def get_entry_count() -> int:
