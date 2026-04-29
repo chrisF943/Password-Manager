@@ -78,6 +78,8 @@ def main(page: ft.Page):
     page.window.width = 900
     page.window.height = 750
     page.window.resizable = True
+    page.window.title_bar_hidden = True
+    page.window.title_bar_layers = True
 
     # Custom fonts
     page.fonts = {
@@ -575,6 +577,7 @@ def main(page: ft.Page):
         header = ft.Container(
             content=ft.Row(
                 [
+                    ft.Container(width=20),  # balance spacer for title bar area
                     ft.Icon(ft.Icons.FOREST, size=40, color=ACCENT),
                     ft.Text("fern", size=30, weight=ft.FontWeight.BOLD, color=TEXT_PRIMARY, font_family="Ubuntu"),
                     ft.Container(expand=True),
@@ -591,7 +594,7 @@ def main(page: ft.Page):
                         tooltip="Logout",
                     ),
                 ],
-                alignment=ft.MainAxisAlignment.START, spacing=15,
+                alignment=ft.MainAxisAlignment.START, spacing=0,
             ), padding=20,
         )
 
