@@ -1,9 +1,11 @@
 import base64
-import os
 import hashlib
+import os
+
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from src.paths import ENV_FILE, DATA_DIR, ensure_data_dir
+
+from src.paths import DATA_DIR, ENV_FILE, ensure_data_dir
 
 ensure_data_dir()
 load_dotenv(ENV_FILE)

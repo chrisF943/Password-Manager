@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+
 from src.paths import DB_PATH, ensure_data_dir
 
 
@@ -20,7 +21,7 @@ db.init_app(app)
 
 def _set_sqlite_pragma():
     """Enable WAL mode for better concurrency and crash resilience."""
-    from sqlalchemy import event, text
+    from sqlalchemy import event
     from sqlalchemy.engine import Engine
 
     @event.listens_for(Engine, "connect")

@@ -3,9 +3,10 @@ Pytest configuration and fixtures for password manager tests.
 """
 import os
 import sys
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -13,6 +14,8 @@ sys.path.insert(0, str(project_root))
 
 # Set up test environment variables before imports
 os.environ['KEY'] = 'test_master_password'
+# Deterministic salt so tests never generate/write one into the real .env
+os.environ.setdefault('SALT', '00112233445566778899aabbccddeeff')
 
 
 @pytest.fixture(scope="function")
@@ -23,7 +26,6 @@ def temp_db():
     db_path = os.path.join(temp_dir, "test_pwm.db")
 
     # Override the database path before importing app
-    import importlib
     from src.database import __init__ as db_init
 
     # Store original config

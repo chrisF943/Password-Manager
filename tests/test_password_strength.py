@@ -1,7 +1,6 @@
 """
 Tests for password strength checker.
 """
-import pytest
 from src.utils.password_strength import check_password_strength
 
 
