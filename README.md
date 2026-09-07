@@ -7,11 +7,12 @@ Welcome to **fern**, a password manager built with Flet (Flutter), SQLAlchemy an
 ### Security
 
 - **Key Derivation**: Encryption key derived from master password using PBKDF2 (480k iterations) — no key file stored on disk
-- **Authentication**: Application access protected by master password (stored as SHA-256 hash)
+- **Authentication**: Application access protected by master password, stored as a PBKDF2-HMAC-SHA256 verifier (480k iterations) — never as a fast hash, and never as the encryption key itself
 - **Local Storage**: Data stored locally in SQLite database, not in the cloud
 - **Salt Management**: Unique salt generated per installation, stored alongside database
 - **Auto-Lock**: App automatically locks after 3 minutes of inactivity, with smooth fade transition back to login and a "logged out" popup
 - **Logout Button**: Manually lock the app at any time with the logout button in the header
+- **No Recovery by Design**: The encryption key is derived from your master password at login and never written to disk. If you forget the master password, your entries cannot be recovered by any means — keep a backup of the password itself
 
 ### Password Management
 
@@ -83,10 +84,13 @@ Password-Manager/
 │   │   ├── models.py        # Passwords model (site, user, password, notes)
 │   │   └── repository.py    # CRUD operations
 │   ├── security/
-│   │   ├── auth.py          # Master password verification (hashed comparison)
+│   │   ├── auth.py          # Master password verification (PBKDF2 verifier)
 │   │   └── encryption.py    # Fernet encryption, PBKDF2 key derivation
 │   ├── gui/
-│   │   └── popups.py        # Delete/Update/Search/Settings dialogs
+│   │   ├── login_page.py    # Standalone login screen
+│   │   ├── main_page.py     # Standalone main password manager view
+│   │   ├── popups.py        # Delete/Update/Search/Settings dialogs
+│   │   └── theme.py         # Shared color constants
 │   └── utils/
 │       ├── password_gen.py        # Password generator
 │       └── password_strength.py   # Password strength checker
