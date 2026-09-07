@@ -1,4 +1,4 @@
-from src.database import db, app
+from src.database import app, db
 from src.database.models import Passwords
 
 

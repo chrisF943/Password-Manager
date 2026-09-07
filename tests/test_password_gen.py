@@ -1,9 +1,9 @@
 """
 Tests for password generation utility.
 """
-import pytest
 import re
-from src.utils.password_gen import generate_password, generate_and_copy_password
+
+from src.utils.password_gen import generate_and_copy_password, generate_password
 
 
 class TestPasswordGenerator:

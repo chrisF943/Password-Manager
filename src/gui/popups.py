@@ -1,9 +1,17 @@
 import flet as ft
 import pyperclip
-from src.database.repository import get_all_passwords, delete_password, update_password
-from src.security.encryption import decrypt_password, encrypt_password
+
+from src.database.repository import delete_password, get_all_passwords, update_password
+from src.gui.theme import (
+    ACCENT,
+    ACCENT_LIGHT,
+    ERROR,
+    SURFACE,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+)
 from src.security.auth import hash_master_password
-from src.gui.theme import DARK_BG, SURFACE, ACCENT, ACCENT_LIGHT, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_HINT, ERROR, WARNING, SUCCESS
+from src.security.encryption import decrypt_password, encrypt_password
 
 
 def show_delete_popup(page: ft.Page, on_delete_callback):
@@ -595,10 +603,12 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
             return
 
         # Re-encrypt all passwords
-        from src.security.encryption import (
-            get_cipher_suite, encrypt_password, decrypt_password
-        )
         from src.database.repository import get_all_passwords, update_password
+        from src.security.encryption import (
+            decrypt_password,
+            encrypt_password,
+            get_cipher_suite,
+        )
 
         old_cipher = current_cipher
         new_cipher = get_cipher_suite(new_pw)
@@ -623,6 +633,7 @@ def show_settings_popup(page: ft.Page, master_password_session: dict, current_ci
 
         # Update .env with new password (use absolute path)
         import os
+
         from src.paths import ENV_FILE
 
         # Read current .env

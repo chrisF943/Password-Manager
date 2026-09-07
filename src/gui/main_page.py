@@ -1,19 +1,21 @@
 """
 Main Page - Flet-based main password manager interface.
 """
-import flet as ft
 import csv
 import os
+
+import flet as ft
+
 from src.database.repository import (
-    add_password, get_all_passwords, get_password,
-    update_password as repo_update_password,
-    delete_password as repo_delete_password,
-    get_entry_count
+    add_password,
+    get_all_passwords,
+    get_entry_count,
+    get_password,
 )
-from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password
+from src.gui.popups import show_delete_popup, show_search_popup, show_update_popup
+from src.security.encryption import decrypt_password, encrypt_password, get_cipher_suite
 from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
-from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup
 
 
 def main_page(page: ft.Page):
@@ -86,7 +88,7 @@ def main_page(page: ft.Page):
     )
 
     # Password count display
-    count_text = ft.Text("", size=14, color=ft.Colors.WHITE70)
+    count_text = ft.Text("", size=14, color=ft.Colors.WHITE_70)
 
     def update_count():
         """Update the password count display."""
@@ -268,11 +270,11 @@ def main_page(page: ft.Page):
     info_section = ft.Container(
         content=ft.Row(
             [
-                ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE54),
+                ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color=ft.Colors.WHITE_54),
                 ft.Text(
                     "Passwords are encrypted using Fernet (AES) symmetric encryption.",
                     size=12,
-                    color=ft.Colors.WHITE54,
+                    color=ft.Colors.WHITE_54,
                 ),
             ],
             spacing=10,

@@ -2,6 +2,7 @@
 Login Page - Flet-based login screen for fern.
 """
 import flet as ft
+
 from src.security.auth import verify_master_password
 
 
@@ -66,7 +67,7 @@ def show_login():
                         ft.Text(
                             "Enter your master password",
                             size=14,
-                            color=ft.Colors.WHITE54,
+                            color=ft.Colors.WHITE_54,
                         ),
                         ft.Container(height=20),
                         password_field,

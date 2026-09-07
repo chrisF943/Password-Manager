@@ -2,7 +2,8 @@
 Tests for encryption/decryption functionality.
 """
 import pytest
-from src.security.encryption import encrypt_password, decrypt_password
+
+from src.security.encryption import decrypt_password, encrypt_password
 
 
 class TestEncryption:
@@ -73,9 +74,9 @@ class TestEncryption:
 
 # Tests for derive_key and get_salt functions
 
-import os
-from src.security.encryption import derive_key, get_salt
 from cryptography.fernet import Fernet
+
+from src.security.encryption import derive_key, get_salt
 
 
 def test_derive_key_produces_valid_fernet_key():

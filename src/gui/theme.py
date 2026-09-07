@@ -14,8 +14,8 @@ ACCENT_LIGHT = "#A4D955"  # light lime accent
 
 # Text colors
 TEXT_PRIMARY = ft.Colors.WHITE
-TEXT_SECONDARY = ft.Colors.WHITE70
-TEXT_HINT = ft.Colors.WHITE54
+TEXT_SECONDARY = ft.Colors.WHITE_70
+TEXT_HINT = ft.Colors.WHITE_54
 
 # Semantic colors (keep standard Flet for these)
 ERROR = ft.Colors.RED_400

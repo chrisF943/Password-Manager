@@ -2,22 +2,50 @@
 Main application entry point with single-window login/main view switching.
 """
 import asyncio
+import csv
+import os
+import time
+
 import flet as ft
+
 from src.database import init_db
-from src.security.auth import verify_master_password, hash_master_password
-from src.security.encryption import get_salt
 from src.database.repository import (
-    add_password, get_all_passwords, get_password,
-    update_password as repo_update_password,
-    delete_password as repo_delete_password,
-    get_entry_count
+    add_password,
+    get_all_passwords,
+    get_entry_count,
+    get_password,
 )
-from src.security.encryption import get_cipher_suite, encrypt_password, decrypt_password, needs_migration, migrateEncryption, _replace_or_append_env_var
-from src.paths import ENV_FILE
+from src.gui.popups import (
+    show_delete_popup,
+    show_search_popup,
+    show_settings_popup,
+    show_update_popup,
+)
+from src.gui.theme import (
+    ACCENT,
+    ACCENT_LIGHT,
+    DARK_BG,
+    ERROR,
+    SUCCESS,
+    SURFACE,
+    TEXT_HINT,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    WARNING,
+)
+from src.paths import EXPORT_DIR
+from src.security.auth import hash_master_password, verify_master_password
+from src.security.encryption import (
+    _replace_or_append_env_var,
+    decrypt_password,
+    encrypt_password,
+    get_cipher_suite,
+    get_salt,
+    migrateEncryption,
+    needs_migration,
+)
 from src.utils.password_gen import generate_password
 from src.utils.password_strength import check_password_strength
-from src.gui.popups import show_delete_popup, show_update_popup, show_search_popup, show_settings_popup
-from src.gui.theme import DARK_BG, SURFACE, ACCENT, ACCENT_LIGHT, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_HINT, ERROR, SUCCESS, WARNING
 
 # Module-level idle timer tracking
 idle_timer = None  # Track idle timer to prevent leaks
@@ -67,7 +95,6 @@ def _fade_transition(page: ft.Page, target_view_fn, on_transition_done=None):
 
 def is_master_password_set() -> bool:
     """Check if master password has been set (KEY exists in .env)."""
-    import os
     return os.getenv("KEY") is not None
 
 
@@ -107,7 +134,6 @@ def main(page: ft.Page):
 
     def record_activity(e=None):
         """Record last activity time."""
-        import time
         last_activity["value"] = time.time()
 
     def show_setup_view():
@@ -207,7 +233,6 @@ def main(page: ft.Page):
             error_message.visible = False
             page.update()
 
-            import time
             time.sleep(0.5)
             show_main_view()
 
@@ -344,7 +369,6 @@ def main(page: ft.Page):
                 await asyncio.sleep(10)
                 if last_activity["value"] is None:
                     continue
-                import time
                 if time.time() - last_activity["value"] > IDLE_TIMEOUT:
                     # Auto-lock: return to login with fade transition, then show message
                     def on_lock_transition_done():
@@ -500,9 +524,6 @@ def main(page: ft.Page):
 
         def on_export_click(e):
             record_activity()
-            import csv
-            import os
-            from src.paths import EXPORT_DIR
             entries = get_all_passwords()
             if not entries:
                 warn_dlg = ft.AlertDialog(bgcolor=SURFACE,
